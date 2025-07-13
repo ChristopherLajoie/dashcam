@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f5f6fa;
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        
+        .status-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 12px 18px;
+            border-radius: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .status-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #28a745;
+        }
+        
+        .status-dot.disconnected {
+            background: #dc3545;
+        }
+        
+        .status-text {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+        
+        .video-wrapper {
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .video-stream {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .recordings-container {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .date-header {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 12px 15px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .date-header.active {
+            background: #2c3e50;
+            color: white;
+            border-color: #2c3e50;
+        }
+        
+        .date-content {
+            display: none;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .date-content.open {
+            display: block;
+        }
+        
+        .recording-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .recording-item:last-child {
+            border-bottom: none;
+        }
+        
+        .recording-info {
+            flex: 1;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .recording-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .btn-play {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-download {
+            background: #007bff;
+            color: white;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .status-item {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .status-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .status-label {
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        
+        .error {
+            text-align: center;
+            color: #dc3545;
+            padding: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .status-bar {
+                gap: 8px;
+            }
+            
+            .status-indicator {
+                padding: 10px 15px;
+            }
+            
+            .status-text {
+                font-size: 14px;
+            }
+            
+            .section {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" id="connectionDot"></div>
+                <span class="status-text" id="connectionText">Connected</span>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot" id="recordingDot"></div>
+                <span class="status-text" id="recordingText">Recording</span>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="video-wrapper">
+                <img id="videoStream" class="video-stream" alt="Camera stream" />
+            </div>
+        </div>
+        
+        <div class="section">
+            <div id="recordingsContainer" class="recordings-container">
+                <div class="loading">Loading recordings...</div>
+            </div>
+        </div>
+        
+        <div class="status-grid" id="statusGrid">
+            <div class="status-item">
+                <div class="status-value">...</div>
+                <div class="status-label">Disk Usage</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value">...</div>
+                <div class="status-label">Free Space</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isLoading = false;
+        
+        function toggleAccordion(element) {
+            const content = element.nextElementSibling;
+            const isOpen = content.classList.contains('open');
+            
+            // Close all others
+            document.querySelectorAll('.date-content.open').forEach(item => {
+                item.classList.remove('open');
+                item.previousElementSibling.classList.remove('active');
+            });
+            
+            if (!isOpen) {
+                content.classList.add('open');
+                element.classList.add('active');
+            }
+        }
+
+        async function loadRecordings() {
+            if (isLoading) return;
+            isLoading = true;
+            
+            const container = document.getElementById('recordingsContainer');
+            
+            try {
+                const response = await fetch('/api/recordings');
+                if (!response.ok) throw new Error('Failed to load');
+                
+                const data = await response.json();
+                if (!data || Object.keys(data).length === 0) {
+                    container.innerHTML = '<div class="loading">No recordings found</div>';
+                    return;
+                }
+                
+                let html = '';
+                for (const [date, dayData] of Object.entries(data)) {
+                    if (!dayData.recordings || dayData.recordings.length === 0) continue;
+                    
+                    const formattedDate = new Date(date).toLocaleDateString();
+                    const count = dayData.recordings.length;
+                    
+                    html += `
+                        <div class="date-header" onclick="toggleAccordion(this)">
+                            <span>${formattedDate}</span>
+                            <span>${count} recording${count > 1 ? 's' : ''}</span>
+                        </div>
+                        <div class="date-content">
+                    `;
+                    
+                    for (const recording of dayData.recordings) {
+                        const time = new Date(recording.start_time).toLocaleTimeString();
+                        html += `
+                            <div class="recording-item">
+                                <div class="recording-info">🕒 ${time}</div>
+                                <div class="recording-actions">
+                                    <a href="/api/play/${date}/${recording.filename}" target="_blank" class="action-btn btn-play">▶</a>
+                                    <a href="/api/download/${date}/${recording.filename}" class="action-btn btn-download">↓</a>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    html += '</div>';
+                }
+                
+                container.innerHTML = html;
+                
+            } catch (error) {
+                container.innerHTML = '<div class="error">Error loading recordings</div>';
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        async function updateStatus() {
+            try {
+                const response = await fetch('/api/status');
+                if (!response.ok) throw new Error('Failed');
+                
+                const data = await response.json();
+                
+                // Connection status
+                const connDot = document.getElementById('connectionDot');
+                const connText = document.getElementById('connectionText');
+                connDot.className = 'status-dot';
+                connText.textContent = 'Connected';
+                
+                // Recording status
+                const recDot = document.getElementById('recordingDot');
+                const recText = document.getElementById('recordingText');
+                if (data.recording_status === 'active') {
+                    recDot.className = 'status-dot';
+                    recText.textContent = 'Recording';
+                } else {
+                    recDot.className = 'status-dot disconnected';
+                    recText.textContent = 'Not Recording';
+                }
+                
+                // Disk info
+                const grid = document.getElementById('statusGrid');
+                const diskPercent = data.disk_usage ? Math.round(data.disk_usage.percent) + '%' : 'Unknown';
+                const freeSpace = data.disk_usage ? Math.round(data.disk_usage.free / (1024*1024*1024)) + ' GB' : 'Unknown';
+                
+                grid.innerHTML = `
+                    <div class="status-item">
+                        <div class="status-value">${diskPercent}</div>
+                        <div class="status-label">Disk Usage</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value">${freeSpace}</div>
+                        <div class="status-label">Free Space</div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                // Error state
+                document.getElementById('connectionDot').className = 'status-dot disconnected';
+                document.getElementById('connectionText').textContent = 'Error';
+                document.getElementById('recordingDot').className = 'status-dot disconnected';
+                document.getElementById('recordingText').textContent = 'Error';
+            }
+        }
+
+        function startStream() {
+            const video = document.getElementById('videoStream');
+            video.src = '/api/stream?' + Date.now();
+        }
+
+        // Initialize
+        window.addEventListener('load', function() {
+            // Load data first
+            updateStatus();
+            loadRecordings();
+            
+            // Start stream after short delay
+            setTimeout(startStream, 2000);
+            
+            // Set up intervals
+            setInterval(updateStatus, 30000);
+            setInterval(loadRecordings, 300000);
+        });
+
+        // Refresh stream when page becomes visible
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                setTimeout(startStream, 1000);
+            }
+        });
+    </script>
+</body>
+</html>

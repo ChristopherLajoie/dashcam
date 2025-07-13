@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Stream - Pi Camera</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: #333;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .header h1 {
+            font-size: 1.5em;
+        }
+        
+        .nav-btn {
+            background: #667eea;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background 0.3s ease;
+        }
+        
+        .nav-btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .stream-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: calc(100vh - 70px);
+        }
+        
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        .video-stream {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .stream-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .control-btn:hover {
+            background: #5a6fd8;
+            transform: scale(1.05);
+        }
+        
+        .control-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .stream-info {
+            margin-top: 30px;
+            text-align: center;
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-online {
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-offline {
+            background: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .stream-container {
+                padding: 10px;
+            }
+            
+            .stream-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .control-btn {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📹 Live Camera Feed</h1>
+        <a href="/" class="nav-btn">← Back to Home</a>
+    </div>
+    
+    <div class="stream-container">
+        <div class="video-wrapper">
+            <img id="videoStream" class="video-stream" alt="Camera stream will appear here" />
+        </div>
+        
+        <div class="stream-controls">
+            <button class="control-btn" onclick="startStream()">▶ Start Stream</button>
+            <button class="control-btn" onclick="stopStream()">⏹ Stop Stream</button>
+            <button class="control-btn" onclick="refreshStream()">🔄 Refresh</button>
+        </div>
+        
+        <div class="stream-info">
+            <h3>Stream Status</h3>
+            <p>
+                <span id="statusIndicator" class="status-indicator status-offline"></span>
+                <span id="statusText">Stream Stopped</span>
+            </p>
+            <p style="margin-top: 10px; color: #ccc; font-size: 0.9em;">
+                Camera: rtsp://192.168.1.18:554/1/h264major<br>
+                Server: 10.42.0.1:5000
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const videoElement = document.getElementById('videoStream');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        let streamActive = false;
+
+        function startStream() {
+            videoElement.src = '/api/stream?' + new Date().getTime();
+            streamActive = true;
+            updateStatus('online', 'Stream Active');
+            
+            videoElement.onload = function() {
+                updateStatus('online', 'Stream Active');
+            };
+            
+            videoElement.onerror = function() {
+                updateStatus('offline', 'Stream Error');
+                streamActive = false;
+            };
+        }
+
+        function stopStream() {
+            videoElement.src = '';
+            streamActive = false;
+            updateStatus('offline', 'Stream Stopped');
+        }
+
+        function refreshStream() {
+            if (streamActive) {
+                startStream();
+            }
+        }
+
+        function updateStatus(status, text) {
+            statusIndicator.className = `status-indicator status-${status}`;
+            statusText.textContent = text;
+        }
+
+        // Auto-start stream when page loads
+        window.addEventListener('load', function() {
+            setTimeout(startStream, 1000);
+        });
+    </script>
+</body>
+</html>

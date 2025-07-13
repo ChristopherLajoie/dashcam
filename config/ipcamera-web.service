@@ -1,0 +1,18 @@
+[Unit]
+Description=IP Camera Web Server
+After=network.target ipcamera-recorder.service
+Wants=network.target
+
+[Service]
+Type=simple
+User=foxtrot
+Group=foxtrot
+WorkingDirectory=/opt/ipcamera
+ExecStart=/opt/ipcamera/venv/bin/python /opt/ipcamera/scripts/webserver.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
