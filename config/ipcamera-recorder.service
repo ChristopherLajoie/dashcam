@@ -1,0 +1,15 @@
+[Unit]
+Description=IP Camera Recording Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/ipcamera/scripts/start_recorder.sh
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

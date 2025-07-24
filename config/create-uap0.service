@@ -1,0 +1,13 @@
+[Unit]
+Description=Create uap0 AP interface
+Before=hostapd.service dnsmasq.service
+Wants=hostapd.service dnsmasq.service
+
+[Service]
+Type=oneshot
+ExecStart=-/sbin/iw dev wlan0 interface add uap0 type __ap
+ExecStart=-/usr/sbin/ip addr add 10.42.0.1/24 dev uap0
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
