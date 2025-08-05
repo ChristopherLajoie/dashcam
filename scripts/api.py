@@ -1,6 +1,7 @@
 import requests
 import string
 import logging
+import os
 from onvif import ONVIFCamera
 from enum import Enum
 
@@ -448,7 +449,58 @@ class ParameterHandler:
 
         return self._set_http_param('IRenable', '0')
 
+
+def get_next_framerate():
+    """
+    Reads the current framerate state and returns the next one to use.
+    Alternates between 30fps and 25fps.
+    """
+    state_file = '/opt/ipcamera/framerate_state.txt'
+    
+    try:
+        # Try to read the current state
+        if os.path.exists(state_file):
+            with open(state_file, 'r') as f:
+                current_framerate = f.read().strip()
+            
+            # Alternate to the other framerate
+            if current_framerate == '30':
+                next_framerate = FramerateValues._25
+                next_state = '25'
+            else:
+                next_framerate = FramerateValues._30
+                next_state = '30'
+        else:
+            # First run - start with 30fps
+            next_framerate = FramerateValues._25
+            next_state = '25'
+        
+        # Write the new state
+        with open(state_file, 'w') as f:
+            f.write(next_state)
+        
+        print(f"Setting framerate to {next_state}fps")
+        return next_framerate
+        
+    except Exception as e:
+        print(f"Error managing framerate state: {e}")
+        # Fallback to 30fps if there's any error
+        return FramerateValues._30
+
+
 if __name__ == "__main__":
     controller = ParameterHandler("192.168.1.18", 8999, "admin", "admin")
-    controller.setFrameRate(FramerateValues._25)
-    controller.VerticalMirror()
+
+    try:
+        # Get the next framerate value (alternates between 30 and 25)
+        framerate = get_next_framerate()
+        result = controller.setFrameRate(framerate)
+        print("Setting camera parameters...")
+             
+        if result == 0:
+            print(f"Failed to set parameter")    
+        else:
+            print(f"Parameter set")   
+
+    except Exception as e:
+        print(f"⚠️ Could not set camera parameters: {e}")

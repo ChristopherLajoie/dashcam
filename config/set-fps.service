@@ -1,19 +1,17 @@
 [Unit]
 Description=IP Camera Web Server
-After=network.target ipcamera-recorder.service 
-After=network.target systemd-user-sessions.service
 Requires=systemd-user-sessions.service
 Wants=network.target
 
 [Service]
-Type=simple
+Type=oneshot
 User=foxtrot
 Group=foxtrot
 WorkingDirectory=/opt/ipcamera
 Environment=PATH=/opt/ipcamera/venv/bin:/usr/bin:/bin
-ExecStart=/opt/ipcamera/venv/bin/python3 /opt/ipcamera/scripts/webserver.py
-Restart=always
-RestartSec=5
+ExecStart=/opt/ipcamera/venv/bin/python3 /opt/ipcamera/scripts/api.py
+RemainAfterExit=no
+Restart=no
 StandardOutput=journal
 StandardError=journal
 
