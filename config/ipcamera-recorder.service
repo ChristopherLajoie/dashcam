@@ -1,0 +1,16 @@
+[Unit]
+Description=IP Camera Recording Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+Environment=PATH=/opt/ipcamera/venv/bin:/usr/bin:/bin
+ExecStart=/opt/ipcamera/scripts/start_recorder.sh
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

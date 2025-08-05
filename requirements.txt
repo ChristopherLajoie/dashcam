@@ -1,0 +1,6 @@
+flask
+flask-cors
+psutil
+requests
+zeep==4.1.0
+onvif-zeep==0.2.12

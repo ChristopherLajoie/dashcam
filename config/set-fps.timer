@@ -1,0 +1,9 @@
+[Unit]
+Description=Delay-start timer for fps change
+
+[Timer]
+OnBootSec=40s          
+Unit=set-fps.service
+
+[Install]
+WantedBy=timers.target

@@ -16,9 +16,9 @@ class CameraRecorder:
         self.recordings_dir = f"{self.base_dir}/recordings"
         self.logs_dir = f"{self.base_dir}/logs"
         self.rtsp_url = "rtsp://192.168.1.18:554/1/h264major"
-        self.segment_duration = 600  # 10 minutes
         self.max_disk_usage = 80  # Max disk usage percentage
         self.running = False
+        self.current_process = None
         
         # Setup logging
         os.makedirs(self.logs_dir, exist_ok=True)
@@ -40,8 +40,18 @@ class CameraRecorder:
         signal.signal(signal.SIGINT, self.signal_handler)
     
     def signal_handler(self, signum, frame):
-        self.logger.info(f"Received signal {signum}, shutting down...")
+        self.logger.info(f"Received signal {signum}, shutting down gracefully...")
         self.running = False
+        # Gracefully stop current recording
+        if self.current_process:
+            self.logger.info("Stopping current recording...")
+            self.current_process.terminate()
+            try:
+                # Wait a moment for graceful shutdown
+                self.current_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.logger.warning("Recording didn't stop gracefully, forcing...")
+                self.current_process.kill()
     
     def get_disk_usage(self):
         """Get current disk usage percentage"""
@@ -51,174 +61,152 @@ class CameraRecorder:
     def cleanup_old_files(self):
         """Remove old recordings if disk usage is too high"""
         while self.get_disk_usage() > self.max_disk_usage:
-            oldest_dir = None
+            oldest_file = None
             oldest_time = float('inf')
             
             for item in os.listdir(self.recordings_dir):
-                item_path = os.path.join(self.recordings_dir, item)
-                if os.path.isdir(item_path):
+                if item.endswith('.mp4'):
+                    item_path = os.path.join(self.recordings_dir, item)
+                    # Check for and remove zero-byte files
+                    if os.path.getsize(item_path) == 0:
+                        self.logger.info(f"Removing zero-byte file: {item_path}")
+                        os.remove(item_path)
+                        continue
+                    
                     mtime = os.path.getmtime(item_path)
                     if mtime < oldest_time:
                         oldest_time = mtime
-                        oldest_dir = item_path
+                        oldest_file = item_path
             
-            if oldest_dir:
-                self.logger.info(f"Removing old recordings: {oldest_dir}")
-                shutil.rmtree(oldest_dir)
+            if oldest_file:
+                self.logger.info(f"Removing old recording: {oldest_file}")
+                os.remove(oldest_file)
             else:
                 break
     
-    def create_daily_metadata(self, date_str):
-        """Create metadata file for the day"""
-        metadata = {
-            "date": date_str,
-            "recordings": [],
-            "created": datetime.now().isoformat()
-        }
-        
-        date_dir = os.path.join(self.recordings_dir, date_str)
-        metadata_file = os.path.join(date_dir, "metadata.json")
-        
-        with open(metadata_file, 'w') as f:
-            json.dump(metadata, f, indent=2)
-        
-        return metadata_file
-    
-    def update_metadata(self, date_str, filename, start_time, end_time=None):
-        """Update metadata file with recording info"""
-        date_dir = os.path.join(self.recordings_dir, date_str)
-        metadata_file = os.path.join(date_dir, "metadata.json")
-        
-        # Load existing metadata
-        try:
-            with open(metadata_file, 'r') as f:
-                metadata = json.load(f)
-        except:
-            metadata = {
-                "date": date_str,
-                "recordings": [],
-                "created": datetime.now().isoformat()
-            }
-        
-        # Add or update recording entry
-        recording_entry = {
-            "filename": filename,
-            "start_time": start_time,
-            "end_time": end_time,
-            "duration": None
-        }
-        
-        if end_time:
-            start_dt = datetime.fromisoformat(start_time)
-            end_dt = datetime.fromisoformat(end_time)
-            recording_entry["duration"] = str(end_dt - start_dt)
-        
-        # Update or add entry
-        found = False
-        for i, rec in enumerate(metadata["recordings"]):
-            if rec["filename"] == filename:
-                metadata["recordings"][i] = recording_entry
-                found = True
-                break
-        
-        if not found:
-            metadata["recordings"].append(recording_entry)
-        
-        metadata["updated"] = datetime.now().isoformat()
-        
-        # Save metadata
-        with open(metadata_file, 'w') as f:
-            json.dump(metadata, f, indent=2)
-    
-    def record_segment(self, output_file, start_time):
-        """Record a single segment using FFmpeg"""
+
+    def record_continuous(self, output_file):
+        """Record continuously until stopped - resilient to power loss"""
         cmd = [
             'ffmpeg',
-            '-y',  # Overwrite output file
-            '-rtsp_transport', 'tcp',  # Use TCP for reliability
-            '-buffer_size', '1024000',  # Larger input buffer
-            '-max_delay', '500000',     # Allow buffering delay
+            '-y',
+            '-rtsp_transport', 'tcp',
+            '-buffer_size', '1024000',
+            '-max_delay', '500000',
             '-i', self.rtsp_url,
-            '-c:v', 'copy',  # Copy video without re-encoding
-            '-c:a', 'copy',  # Copy audio without re-encoding
-            '-t', str(self.segment_duration),  # Duration
+
+            '-c:v', 'libx264',
+            '-preset', 'ultrafast',
+            '-crf', '23',
+
+            '-fps_mode', 'passthrough',    # keep source fps (ffmpeg ≥4.3)
+
+            '-movflags', 'frag_keyframe+empty_moov+default_base_moof',
+            '-flush_packets', '1',
             '-f', 'mp4',
             output_file
         ]
-        
-        self.logger.info(f"Starting recording: {output_file}")
+            
+        self.logger.info(f"Starting continuous recording: {output_file}")
         
         try:
-            process = subprocess.Popen(
+            self.current_process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True
             )
             
-            # Monitor process
-            while process.poll() is None and self.running:
+            # Monitor process until stopped
+            while self.current_process.poll() is None and self.running:
                 time.sleep(1)
             
-            if not self.running:
-                process.terminate()
-                process.wait()
+            # Check if we stopped gracefully or due to error
+            if self.running and self.current_process.returncode != 0:
+                error = self.current_process.stderr.read()
+                self.logger.error(f"FFmpeg error: {error}")
                 return False
             
-            if process.returncode == 0:
-                end_time = datetime.now().isoformat()
-                date_str = datetime.fromisoformat(start_time).strftime('%Y-%m-%d')
+            # Recording completed (either gracefully stopped or process ended)
+            if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
                 filename = os.path.basename(output_file)
-                self.update_metadata(date_str, filename, start_time, end_time)
+                self.create_metadata(filename)
                 self.logger.info(f"Recording completed: {output_file}")
                 return True
             else:
-                error = process.stderr.read()
-                self.logger.error(f"FFmpeg error: {error}")
+                self.logger.warning(f"Recording file is empty or missing: {output_file}")
                 return False
             
         except Exception as e:
             self.logger.error(f"Recording error: {e}")
             return False
+        finally:
+            self.current_process = None
     
+    def get_next_recording_number(self):
+        """Get the next recording number"""
+        existing_files = []
+        try:
+            for f in os.listdir(self.recordings_dir):
+                if f.endswith('.mp4') and f.startswith('recording_'):
+                    # Extract number from recording_N.mp4
+                    try:
+                        num = int(f.replace('recording_', '').replace('.mp4', ''))
+                        existing_files.append(num)
+                    except ValueError:
+                        continue
+        except:
+            pass
+        
+        # Return next number (start from 1)
+        return max(existing_files) + 1 if existing_files else 1
+
+    def create_metadata(self, filename):
+        """Add filename to simple metadata list"""
+        metadata_file = os.path.join(self.recordings_dir, "recordings.json")
+        
+        # Load existing metadata
+        try:
+            with open(metadata_file, 'r') as f:
+                metadata = json.load(f)
+        except:
+            metadata = {"recordings": []}
+        
+        # Add recording if not already present
+        if filename not in metadata["recordings"]:
+            metadata["recordings"].append(filename)
+        
+        # Save metadata
+        with open(metadata_file, 'w') as f:
+            json.dump(metadata, f, indent=2)
+
     def run(self):
-        """Main recording loop"""
+        """Main recording loop - one continuous recording per session"""
         self.logger.info("Camera recorder starting...")
         self.running = True
         
+        # Generate output filename - NO DATE FOLDERS, just flat structure
+        recording_num = self.get_next_recording_number()
+        output_file = os.path.join(self.recordings_dir, f"recording_{recording_num}.mp4")
+        
+        self.logger.info(f"Starting recording session: {output_file}")
+        
+        # Start continuous recording
         while self.running:
-            now = datetime.now()
-            date_str = now.strftime('%Y-%m-%d')
-            time_str = now.strftime('%H-%M-%S')
+            # Cleanup old files before starting (free up space)
+            self.cleanup_old_files()
             
-            # Create daily directory
-            date_dir = os.path.join(self.recordings_dir, date_str)
-            os.makedirs(date_dir, exist_ok=True)
-            
-            # Create metadata file if it doesn't exist
-            metadata_file = os.path.join(date_dir, "metadata.json")
-            if not os.path.exists(metadata_file):
-                self.create_daily_metadata(date_str)
-            
-            # Generate output filename
-            output_file = os.path.join(date_dir, f"{time_str}.mp4")
-            start_time = now.isoformat()
-            
-            # Add entry to metadata (without end time initially)
-            filename = os.path.basename(output_file)
-            self.update_metadata(date_str, filename, start_time)
-            
-            # Record segment
-            success = self.record_segment(output_file, start_time)
+            # Start recording - this will run until Pi shuts down or error occurs
+            success = self.record_continuous(output_file)
             
             if not success and self.running:
                 self.logger.warning("Recording failed, retrying in 30 seconds...")
                 time.sleep(30)
-            
-            # Cleanup old files
-            self.cleanup_old_files()
+            else:
+                # Recording stopped (either gracefully or due to shutdown)
+                break
         
-        self.logger.info("Camera recorder stopped")
+        self.logger.info("Camera recorder session ended")
 
 if __name__ == "__main__":
     recorder = CameraRecorder()
