@@ -89,25 +89,24 @@ class CameraRecorder:
         """Record continuously until stopped - resilient to power loss"""
         cmd = [
             'ffmpeg',
-            '-y',  # Overwrite output file
-            '-rtsp_transport', 'tcp',  # Use TCP for reliability
-            '-buffer_size', '1024000',  # Larger input buffer
-            '-max_delay', '500000',     # Allow buffering delay
-            '-fflags', 'nobuffer',        # No buffering
-            '-flags', 'low_delay',        # Low delay mode
+            '-y',
+            '-rtsp_transport', 'tcp',
+            '-buffer_size', '1024000',
+            '-max_delay', '500000',
             '-i', self.rtsp_url,
-            '-c:v', 'libx264',  # Re-encode to ensure framerate control
-            '-preset', 'ultrafast',  # Fast encoding
-            '-crf', '23',  # Good quality
-            '-force_fps',  # Force frame rate conversion
-            '-c:a', 'copy',  # Copy audio without re-encoding
-            # Fragmented MP4 for power-loss resilience
+
+            '-c:v', 'libx264',
+            '-preset', 'ultrafast',
+            '-crf', '23',
+
+            '-fps_mode', 'passthrough',    # keep source fps (ffmpeg ≥4.3)
+
             '-movflags', 'frag_keyframe+empty_moov+default_base_moof',
-            '-flush_packets', '1',  # Flush data to disk frequently
+            '-flush_packets', '1',
             '-f', 'mp4',
             output_file
         ]
-        
+            
         self.logger.info(f"Starting continuous recording: {output_file}")
         
         try:

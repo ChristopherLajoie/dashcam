@@ -238,18 +238,5 @@ def get_logs():
     return jsonify(logs)
 
 if __name__ == '__main__':
-     # Call parameter changer once at boot
-    try:
-        print("Setting camera parameters...")
-        result = subprocess.run([
-            'python3', '/opt/ipcamera/scripts/api.py'], capture_output=True, text=True, timeout=30)
-        
-        if result.returncode != 0:
-            print(f"❌ Failed to set resolution: {result.stderr}")    
-    except subprocess.TimeoutExpired:
-        print("⚠️ Camera parameter script timed out")
-    except Exception as e:
-        print(f"⚠️ Could not set camera parameters: {e}")
-        
     # Bind to uap0 interface IP
     app.run(host='0.0.0.0', port=5000, debug=False)
