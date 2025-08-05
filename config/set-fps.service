@@ -1,0 +1,19 @@
+[Unit]
+Description=IP Camera Web Server
+Requires=systemd-user-sessions.service
+Wants=network.target
+
+[Service]
+Type=oneshot
+User=foxtrot
+Group=foxtrot
+WorkingDirectory=/opt/ipcamera
+Environment=PATH=/opt/ipcamera/venv/bin:/usr/bin:/bin
+ExecStart=/opt/ipcamera/venv/bin/python3 /opt/ipcamera/scripts/api.py
+RemainAfterExit=no
+Restart=no
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
