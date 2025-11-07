@@ -252,7 +252,6 @@
                 
                 const recordings = await response.json();
                 
-                // Check if we got an error response
                 if (recordings.error) {
                     throw new Error(`Server error: ${recordings.error}`);
                 }
@@ -293,13 +292,11 @@
                 
                 const data = await response.json();
                 
-                // Connection status
                 const connDot = document.getElementById('connectionDot');
                 const connText = document.getElementById('connectionText');
                 connDot.className = 'status-dot';
                 connText.textContent = 'Connected';
                 
-                // Recording status
                 const recDot = document.getElementById('recordingDot');
                 const recText = document.getElementById('recordingText');
                 if (data.recording_status === 'active') {
@@ -310,7 +307,6 @@
                     recText.textContent = 'Not Recording';
                 }
                 
-                // Disk info
                 const grid = document.getElementById('statusGrid');
                 const diskPercent = data.disk_usage ? Math.round(data.disk_usage.percent) + '%' : 'Unknown';
                 const freeSpace = data.disk_usage ? Math.round(data.disk_usage.free / (1024*1024*1024)) + ' GB' : 'Unknown';
@@ -327,7 +323,6 @@
                 `;
                 
             } catch (error) {
-                // Error state
                 document.getElementById('connectionDot').className = 'status-dot disconnected';
                 document.getElementById('connectionText').textContent = 'Error';
                 document.getElementById('recordingDot').className = 'status-dot disconnected';
@@ -335,13 +330,10 @@
             }
         }
 
-        // Initialize
         window.addEventListener('load', function() {
-            // Load data
             updateStatus();
             loadRecordings();
             
-            // Set up intervals
             setInterval(updateStatus, 30000);
             setInterval(loadRecordings, 300000);
         });
