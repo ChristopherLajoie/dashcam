@@ -65,30 +65,34 @@ def generate_stream():
     cmd = [
         "ffmpeg",
         "-rtsp_transport", "tcp",
-        "-buffer_size", "1024000",
+        "-fflags", "nobuffer",
+        "-flags", "low_delay",
         "-i", RTSP_URL,
         "-vf", "scale=1280:720",
         "-q:v", "5",
         "-r", "15",
-        "-f", "image2pipe",
-        "-vcodec", "mjpeg",
+        "-f", "mjpeg",
         "-",
     ]
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0)
+    buf = b""
     try:
         while True:
-            data = b""
+            chunk = process.stdout.read(4096)
+            if not chunk:
+                break
+            buf += chunk
             while True:
-                byte = process.stdout.read(1)
-                if not byte:
-                    return
-                data += byte
-                if data[-2:] == b"\xff\xd9":
+                start = buf.find(b"\xff\xd8")
+                end = buf.find(b"\xff\xd9", start + 2)
+                if start == -1 or end == -1:
                     break
-            yield (
-                b"--frame\r\n"
-                b"Content-Type: image/jpeg\r\n\r\n" + data + b"\r\n"
-            )
+                frame = buf[start:end + 2]
+                buf = buf[end + 2:]
+                yield (
+                    b"--frame\r\n"
+                    b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n"
+                )
     finally:
         process.kill()
 
@@ -235,13 +239,16 @@ def play_recording(filename):
 def get_status():
     import psutil
 
-    usage = psutil.disk_usage(RECORDINGS_DIR)
-    disk_usage = {
-        "total": usage.total,
-        "used": usage.used,
-        "free": usage.free,
-        "percent": (usage.used / usage.total) * 100,
-    }
+    try:
+        usage = psutil.disk_usage(RECORDINGS_DIR)
+        disk_usage = {
+            "total": usage.total,
+            "used": usage.used,
+            "free": usage.free,
+            "percent": (usage.used / usage.total) * 100,
+        }
+    except Exception:
+        disk_usage = {"total": 0, "used": 0, "free": 0, "percent": 0}
 
     recording_status = "unknown"
     try:
