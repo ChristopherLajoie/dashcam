@@ -66,17 +66,46 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             margin-bottom: 15px;
         }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
         
         .video-wrapper {
             background: #000;
             border-radius: 8px;
             overflow: hidden;
+            position: relative;
         }
         
         .video-stream {
             width: 100%;
             height: auto;
             display: block;
+        }
+
+        .stream-placeholder {
+            width: 100%;
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #111;
+            color: #666;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .stream-placeholder:hover {
+            background: #1a1a1a;
+            color: #aaa;
         }
         
         .recordings-container {
@@ -215,6 +244,17 @@
                 <span class="status-text" id="recordingText">Recording</span>
             </div>
         </div>
+
+        <!-- Live Stream Section -->
+        <div class="section">
+            <div class="section-title">Live View</div>
+            <div class="video-wrapper">
+                <div class="stream-placeholder" id="streamPlaceholder" onclick="startStream()">
+                    ▶ Click to start live stream
+                </div>
+                <img id="liveStream" class="video-stream" style="display:none;" alt="Live stream" />
+            </div>
+        </div>
         
         <div class="section">
             <div id="recordingsContainer" class="recordings-container">
@@ -236,6 +276,23 @@
 
     <script>
         let isLoading = false;
+        let streamActive = false;
+
+        function startStream() {
+            const img = document.getElementById('liveStream');
+            const placeholder = document.getElementById('streamPlaceholder');
+            img.src = '/api/stream';
+            img.style.display = 'block';
+            placeholder.style.display = 'none';
+            streamActive = true;
+
+            img.onerror = function() {
+                img.style.display = 'none';
+                placeholder.style.display = 'flex';
+                placeholder.textContent = '⚠ Stream unavailable — click to retry';
+                streamActive = false;
+            };
+        }
 
         async function loadRecordings() {
             if (isLoading) return;

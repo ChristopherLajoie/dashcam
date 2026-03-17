@@ -61,6 +61,46 @@ def get_snapshot():
         return "Timeout capturing frame", 500
 
 
+def generate_stream():
+    cmd = [
+        "ffmpeg",
+        "-rtsp_transport", "tcp",
+        "-buffer_size", "1024000",
+        "-i", RTSP_URL,
+        "-vf", "scale=1280:720",
+        "-q:v", "5",
+        "-r", "15",
+        "-f", "image2pipe",
+        "-vcodec", "mjpeg",
+        "-",
+    ]
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    try:
+        while True:
+            data = b""
+            while True:
+                byte = process.stdout.read(1)
+                if not byte:
+                    return
+                data += byte
+                if data[-2:] == b"\xff\xd9":
+                    break
+            yield (
+                b"--frame\r\n"
+                b"Content-Type: image/jpeg\r\n\r\n" + data + b"\r\n"
+            )
+    finally:
+        process.kill()
+
+
+@app.route("/api/stream")
+def video_stream():
+    return Response(
+        generate_stream(),
+        mimetype="multipart/x-mixed-replace; boundary=frame"
+    )
+
+
 @app.route("/api/debug")
 def debug_recordings():
     debug_info = {}
