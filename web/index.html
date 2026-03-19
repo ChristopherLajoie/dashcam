@@ -83,10 +83,11 @@
             position: relative;
         }
         
-        .video-stream {
+        #liveVideo {
             width: 100%;
             height: auto;
-            display: block;
+            display: none;
+            background: #000;
         }
 
         .stream-placeholder {
@@ -210,25 +211,11 @@
         }
         
         @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .status-bar {
-                gap: 8px;
-            }
-            
-            .status-indicator {
-                padding: 10px 15px;
-            }
-            
-            .status-text {
-                font-size: 14px;
-            }
-            
-            .section {
-                padding: 12px;
-            }
+            .container { padding: 10px; }
+            .status-bar { gap: 8px; }
+            .status-indicator { padding: 10px 15px; }
+            .status-text { font-size: 14px; }
+            .section { padding: 12px; }
         }
     </style>
 </head>
@@ -252,7 +239,7 @@
                 <div class="stream-placeholder" id="streamPlaceholder" onclick="startStream()">
                     ▶ Click to start live stream
                 </div>
-                <img id="liveStream" class="video-stream" style="display:none;" alt="Live stream" />
+                <video id="liveVideo" autoplay muted playsinline controls></video>
             </div>
         </div>
         
@@ -274,52 +261,66 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script>
         let isLoading = false;
-        let streamActive = false;
+        let hlsInstance = null;
 
-        function startStream() {
-            const img = document.getElementById('liveStream');
+        async function startStream() {
+            const video = document.getElementById('liveVideo');
             const placeholder = document.getElementById('streamPlaceholder');
-            img.src = '/api/stream';
-            img.style.display = 'block';
-            placeholder.style.display = 'none';
-            streamActive = true;
 
-            img.onerror = function() {
-                img.style.display = 'none';
+            placeholder.textContent = '⏳ Starting stream...';
+
+            // Tell the server to start the HLS FFmpeg process
+            await fetch('/api/stream/start', { method: 'POST' });
+
+            // Wait a moment for the first segment to be written
+            await new Promise(r => setTimeout(r, 2000));
+
+            placeholder.style.display = 'none';
+            video.style.display = 'block';
+
+            if (Hls.isSupported()) {
+                if (hlsInstance) hlsInstance.destroy();
+                hlsInstance = new Hls({
+                    liveSyncDurationCount: 2,
+                    liveMaxLatencyDurationCount: 4,
+                    lowLatencyMode: true,
+                });
+                hlsInstance.loadSource('/api/stream/hls/stream.m3u8');
+                hlsInstance.attachMedia(video);
+                hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+                hlsInstance.on(Hls.Events.ERROR, (event, data) => {
+                    if (data.fatal) {
+                        video.style.display = 'none';
+                        placeholder.style.display = 'flex';
+                        placeholder.textContent = '⚠ Stream error — click to retry';
+                    }
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                // Safari native HLS
+                video.src = '/api/stream/hls/stream.m3u8';
+                video.play();
+            } else {
                 placeholder.style.display = 'flex';
-                placeholder.textContent = '⚠ Stream unavailable — click to retry';
-                streamActive = false;
-            };
+                placeholder.textContent = '⚠ HLS not supported in this browser';
+            }
         }
 
         async function loadRecordings() {
             if (isLoading) return;
             isLoading = true;
-            
             const container = document.getElementById('recordingsContainer');
-            
             try {
                 const response = await fetch('/api/recordings');
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
-                }
-                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const recordings = await response.json();
-                
-                if (recordings.error) {
-                    throw new Error(`Server error: ${recordings.error}`);
-                }
-                
                 if (!recordings || recordings.length === 0) {
                     container.innerHTML = '<div class="loading">No recordings found</div>';
                     return;
                 }
-                
                 let html = '<h3>Recordings</h3>';
-                
                 for (const recording of recordings) {
                     html += `
                         <div class="recording-item">
@@ -331,12 +332,9 @@
                         </div>
                     `;
                 }
-                
                 container.innerHTML = html;
-                
             } catch (error) {
-                console.error('Error loading recordings:', error);
-                container.innerHTML = `<div class="error">Error loading recordings: ${error.message}</div>`;
+                container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
             } finally {
                 isLoading = false;
             }
@@ -346,14 +344,11 @@
             try {
                 const response = await fetch('/api/status');
                 if (!response.ok) throw new Error('Failed');
-                
                 const data = await response.json();
-                
-                const connDot = document.getElementById('connectionDot');
-                const connText = document.getElementById('connectionText');
-                connDot.className = 'status-dot';
-                connText.textContent = 'Connected';
-                
+
+                document.getElementById('connectionDot').className = 'status-dot';
+                document.getElementById('connectionText').textContent = 'Connected';
+
                 const recDot = document.getElementById('recordingDot');
                 const recText = document.getElementById('recordingText');
                 if (data.recording_status === 'active') {
@@ -363,34 +358,23 @@
                     recDot.className = 'status-dot disconnected';
                     recText.textContent = 'Not Recording';
                 }
-                
-                const grid = document.getElementById('statusGrid');
-                const diskPercent = data.disk_usage ? Math.round(data.disk_usage.percent) + '%' : 'Unknown';
-                const freeSpace = data.disk_usage ? Math.round(data.disk_usage.free / (1024*1024*1024)) + ' GB' : 'Unknown';
-                
-                grid.innerHTML = `
-                    <div class="status-item">
-                        <div class="status-value">${diskPercent}</div>
-                        <div class="status-label">Disk Usage</div>
-                    </div>
-                    <div class="status-item">
-                        <div class="status-value">${freeSpace}</div>
-                        <div class="status-label">Free Space</div>
-                    </div>
+
+                const diskPercent = data.disk_usage ? Math.round(data.disk_usage.percent) + '%' : 'N/A';
+                const freeSpace = data.disk_usage ? Math.round(data.disk_usage.free / (1024*1024*1024)) + ' GB' : 'N/A';
+                document.getElementById('statusGrid').innerHTML = `
+                    <div class="status-item"><div class="status-value">${diskPercent}</div><div class="status-label">Disk Usage</div></div>
+                    <div class="status-item"><div class="status-value">${freeSpace}</div><div class="status-label">Free Space</div></div>
                 `;
-                
-            } catch (error) {
-                document.getElementById('connectionDot').className = 'status-dot disconnected';
+            } catch {
+                ['connectionDot','recordingDot'].forEach(id => document.getElementById(id).className = 'status-dot disconnected');
                 document.getElementById('connectionText').textContent = 'Error';
-                document.getElementById('recordingDot').className = 'status-dot disconnected';
                 document.getElementById('recordingText').textContent = 'Error';
             }
         }
 
-        window.addEventListener('load', function() {
+        window.addEventListener('load', () => {
             updateStatus();
             loadRecordings();
-            
             setInterval(updateStatus, 30000);
             setInterval(loadRecordings, 300000);
         });
