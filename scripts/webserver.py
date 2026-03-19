@@ -4,7 +4,7 @@ import subprocess
 import threading
 import time
 from datetime import datetime
-from flask import Flask, render_template, Response, send_file, jsonify, request
+from flask import Flask, render_template, Response, send_file, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 app = Flask(__name__, template_folder="/opt/ipcamera/web")
@@ -14,6 +14,38 @@ CORS(app)
 RTSP_URL = "rtsp://192.168.1.18:554/1/h264major"
 RECORDINGS_DIR = "/opt/ipcamera/recordings"
 LOGS_DIR = "/opt/ipcamera/logs"
+HLS_DIR = "/tmp/hls"
+
+hls_process = None
+hls_lock = threading.Lock()
+
+
+def start_hls():
+    global hls_process
+    os.makedirs(HLS_DIR, exist_ok=True)
+    cmd = [
+        "ffmpeg",
+        "-rtsp_transport", "tcp",
+        "-fflags", "nobuffer",
+        "-flags", "low_delay",
+        "-i", RTSP_URL,
+        "-c:v", "copy",          # no transcoding — just remux
+        "-an",                   # no audio
+        "-f", "hls",
+        "-hls_time", "1",        # 1-second segments for low latency
+        "-hls_list_size", "3",   # keep only 3 segments in playlist
+        "-hls_flags", "delete_segments+omit_endlist",
+        "-hls_segment_filename", f"{HLS_DIR}/seg%03d.ts",
+        f"{HLS_DIR}/stream.m3u8",
+    ]
+    hls_process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def stop_hls():
+    global hls_process
+    if hls_process:
+        hls_process.kill()
+        hls_process = None
 
 
 @app.route("/")
@@ -24,6 +56,26 @@ def index():
 @app.route("/recordings")
 def recordings():
     return render_template("recordings.html")
+
+
+@app.route("/api/stream/start", methods=["POST"])
+def stream_start():
+    with hls_lock:
+        stop_hls()
+        start_hls()
+    return jsonify({"status": "started"})
+
+
+@app.route("/api/stream/stop", methods=["POST"])
+def stream_stop():
+    with hls_lock:
+        stop_hls()
+    return jsonify({"status": "stopped"})
+
+
+@app.route("/api/stream/hls/<path:filename>")
+def hls_files(filename):
+    return send_from_directory(HLS_DIR, filename)
 
 
 @app.route("/api/snapshot")
@@ -59,50 +111,6 @@ def get_snapshot():
             return "Error capturing frame", 500
     except subprocess.TimeoutExpired:
         return "Timeout capturing frame", 500
-
-
-def generate_stream():
-    cmd = [
-        "ffmpeg",
-        "-rtsp_transport", "tcp",
-        "-fflags", "nobuffer",
-        "-flags", "low_delay",
-        "-i", RTSP_URL,
-        "-vf", "scale=1280:720",
-        "-q:v", "5",
-        "-r", "15",
-        "-f", "mjpeg",
-        "-",
-    ]
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0)
-    buf = b""
-    try:
-        while True:
-            chunk = process.stdout.read(4096)
-            if not chunk:
-                break
-            buf += chunk
-            while True:
-                start = buf.find(b"\xff\xd8")
-                end = buf.find(b"\xff\xd9", start + 2)
-                if start == -1 or end == -1:
-                    break
-                frame = buf[start:end + 2]
-                buf = buf[end + 2:]
-                yield (
-                    b"--frame\r\n"
-                    b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n"
-                )
-    finally:
-        process.kill()
-
-
-@app.route("/api/stream")
-def video_stream():
-    return Response(
-        generate_stream(),
-        mimetype="multipart/x-mixed-replace; boundary=frame"
-    )
 
 
 @app.route("/api/debug")
@@ -293,7 +301,6 @@ def get_logs():
         try:
             with open(log_file, "r") as f:
                 lines = f.readlines()
-
                 logs = [line.strip() for line in lines[-50:]]
         except:
             pass
