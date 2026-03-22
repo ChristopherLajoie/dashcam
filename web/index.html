@@ -75,6 +75,46 @@
             letter-spacing: 0.05em;
             margin-bottom: 12px;
         }
+
+        .stream-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        #streamToggleBtn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, opacity 0.2s;
+            background: #28a745;
+            color: white;
+        }
+
+        #streamToggleBtn:hover {
+            opacity: 0.88;
+        }
+
+        #streamToggleBtn.active {
+            background: #dc3545;
+        }
+
+        #streamToggleBtn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        #streamStatusLabel {
+            font-size: 13px;
+            color: #888;
+        }
         
         .video-wrapper {
             background: #000;
@@ -97,16 +137,10 @@
             align-items: center;
             justify-content: center;
             background: #111;
-            color: #666;
+            color: #555;
             font-size: 14px;
             border-radius: 8px;
-            cursor: pointer;
             user-select: none;
-        }
-
-        .stream-placeholder:hover {
-            background: #1a1a1a;
-            color: #aaa;
         }
         
         .recordings-container {
@@ -235,9 +269,15 @@
         <!-- Live Stream Section -->
         <div class="section">
             <div class="section-title">Live View</div>
+
+            <div class="stream-controls">
+                <button id="streamToggleBtn" onclick="toggleStream()">&#9654; Start Stream</button>
+                <span id="streamStatusLabel">Stream is off</span>
+            </div>
+
             <div class="video-wrapper">
-                <div class="stream-placeholder" id="streamPlaceholder" onclick="startStream()">
-                    ▶ Click to start live stream
+                <div class="stream-placeholder" id="streamPlaceholder">
+                    No active stream
                 </div>
                 <video id="liveVideo" autoplay muted playsinline controls></video>
             </div>
@@ -265,21 +305,68 @@
     <script>
         let isLoading = false;
         let hlsInstance = null;
+        let streamActive = false;
 
-        async function startStream() {
+        function setStreamUI(state) {
+            // state: 'off' | 'starting' | 'on' | 'stopping' | 'error'
+            const btn = document.getElementById('streamToggleBtn');
+            const label = document.getElementById('streamStatusLabel');
             const video = document.getElementById('liveVideo');
             const placeholder = document.getElementById('streamPlaceholder');
 
-            placeholder.textContent = '⏳ Starting stream...';
+            btn.disabled = (state === 'starting' || state === 'stopping');
 
-            // Tell the server to start the HLS FFmpeg process
-            await fetch('/api/stream/start', { method: 'POST' });
+            if (state === 'off') {
+                streamActive = false;
+                btn.innerHTML = '&#9654; Start Stream';
+                btn.classList.remove('active');
+                label.textContent = 'Stream is off';
+                video.style.display = 'none';
+                placeholder.style.display = 'flex';
+                placeholder.textContent = 'No active stream';
+            } else if (state === 'starting') {
+                btn.innerHTML = '&#8987; Starting\u2026';
+                btn.classList.remove('active');
+                label.textContent = 'Connecting\u2026';
+                placeholder.style.display = 'flex';
+                placeholder.textContent = 'Starting stream\u2026';
+                video.style.display = 'none';
+            } else if (state === 'on') {
+                streamActive = true;
+                btn.innerHTML = '&#9646;&#9646; Stop Stream';
+                btn.classList.add('active');
+                label.textContent = 'Stream is live';
+                placeholder.style.display = 'none';
+                video.style.display = 'block';
+            } else if (state === 'stopping') {
+                btn.innerHTML = '&#8987; Stopping\u2026';
+                label.textContent = 'Stopping\u2026';
+            } else if (state === 'error') {
+                streamActive = false;
+                btn.innerHTML = '&#9654; Retry Stream';
+                btn.classList.remove('active');
+                btn.disabled = false;
+                label.textContent = 'Stream error';
+                video.style.display = 'none';
+                placeholder.style.display = 'flex';
+                placeholder.textContent = '\u26a0 Stream error \u2014 press Start to retry';
+            }
+        }
 
-            // Wait a moment for the first segment to be written
+        async function startStream() {
+            setStreamUI('starting');
+
+            try {
+                await fetch('/api/stream/start', { method: 'POST' });
+            } catch (e) {
+                setStreamUI('error');
+                return;
+            }
+
+            // Give FFmpeg a moment to write the first segment
             await new Promise(r => setTimeout(r, 2000));
 
-            placeholder.style.display = 'none';
-            video.style.display = 'block';
+            const video = document.getElementById('liveVideo');
 
             if (Hls.isSupported()) {
                 if (hlsInstance) hlsInstance.destroy();
@@ -290,21 +377,51 @@
                 });
                 hlsInstance.loadSource('/api/stream/hls/stream.m3u8');
                 hlsInstance.attachMedia(video);
-                hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+                hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+                    video.play();
+                    setStreamUI('on');
+                });
                 hlsInstance.on(Hls.Events.ERROR, (event, data) => {
                     if (data.fatal) {
-                        video.style.display = 'none';
-                        placeholder.style.display = 'flex';
-                        placeholder.textContent = '⚠ Stream error — click to retry';
+                        setStreamUI('error');
+                        if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
                     }
                 });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 // Safari native HLS
                 video.src = '/api/stream/hls/stream.m3u8';
                 video.play();
+                setStreamUI('on');
             } else {
-                placeholder.style.display = 'flex';
-                placeholder.textContent = '⚠ HLS not supported in this browser';
+                setStreamUI('error');
+                document.getElementById('streamPlaceholder').textContent = '\u26a0 HLS not supported in this browser';
+            }
+        }
+
+        async function stopStream() {
+            setStreamUI('stopping');
+
+            if (hlsInstance) {
+                hlsInstance.destroy();
+                hlsInstance = null;
+            }
+
+            const video = document.getElementById('liveVideo');
+            video.pause();
+            video.src = '';
+
+            try {
+                await fetch('/api/stream/stop', { method: 'POST' });
+            } catch (e) { /* best-effort */ }
+
+            setStreamUI('off');
+        }
+
+        function toggleStream() {
+            if (streamActive) {
+                stopStream();
+            } else {
+                startStream();
             }
         }
 
@@ -326,8 +443,8 @@
                         <div class="recording-item">
                             <div class="recording-info">${recording.display_name}</div>
                             <div class="recording-actions">
-                                <a href="/api/play/${recording.filename}" target="_blank" class="action-btn btn-play">▶</a>
-                                <a href="/api/download/${recording.filename}" class="action-btn btn-download">↓</a>
+                                <a href="/api/play/${recording.filename}" target="_blank" class="action-btn btn-play">&#9654;</a>
+                                <a href="/api/download/${recording.filename}" class="action-btn btn-download">&#8595;</a>
                             </div>
                         </div>
                     `;
@@ -371,6 +488,9 @@
                 document.getElementById('recordingText').textContent = 'Error';
             }
         }
+
+        // Initialise UI state
+        setStreamUI('off');
 
         window.addEventListener('load', () => {
             updateStatus();
