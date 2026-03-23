@@ -115,6 +115,35 @@
             font-size: 13px;
             color: #888;
         }
+
+        #wolBtn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, opacity 0.2s;
+            background: #6f42c1;
+            color: white;
+        }
+
+        #wolBtn:hover {
+            opacity: 0.88;
+        }
+
+        #wolBtn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        #wolStatusLabel {
+            font-size: 13px;
+            color: #888;
+        }
         
         .video-wrapper {
             background: #000;
@@ -282,6 +311,15 @@
                 <video id="liveVideo" autoplay muted playsinline controls></video>
             </div>
         </div>
+
+        <!-- Wake on LAN Section -->
+        <div class="section">
+            <div class="section-title">Gaming PC</div>
+            <div class="stream-controls">
+                <button id="wolBtn" onclick="wakePC()">&#9889; Wake PC</button>
+                <span id="wolStatusLabel"></span>
+            </div>
+        </div>
         
         <div class="section">
             <div id="recordingsContainer" class="recordings-container">
@@ -306,9 +344,9 @@
         let isLoading = false;
         let hlsInstance = null;
         let streamActive = false;
+        let startAbortController = null;
 
         function setStreamUI(state) {
-            // state: 'off' | 'starting' | 'on' | 'stopping' | 'error'
             const btn = document.getElementById('streamToggleBtn');
             const label = document.getElementById('streamStatusLabel');
             const video = document.getElementById('liveVideo');
@@ -353,18 +391,46 @@
             }
         }
 
+        async function waitForStreamReady(signal, timeoutMs = 20000) {
+            const deadline = Date.now() + timeoutMs;
+            while (Date.now() < deadline) {
+                if (signal.aborted) return false;
+                try {
+                    const res = await fetch('/api/stream/status', { signal });
+                    const data = await res.json();
+                    if (data.ready) return true;
+                    const count = data.count || 0;
+                    const placeholder = document.getElementById('streamPlaceholder');
+                    if (placeholder) placeholder.textContent = `Building stream\u2026 (${count} segment${count !== 1 ? 's' : ''})`;
+                } catch (e) {
+                    if (e.name === 'AbortError') return false;
+                }
+                await new Promise(r => setTimeout(r, 500));
+            }
+            return false;
+        }
+
         async function startStream() {
             setStreamUI('starting');
 
+            if (startAbortController) startAbortController.abort();
+            startAbortController = new AbortController();
+            const { signal } = startAbortController;
+
             try {
-                await fetch('/api/stream/start', { method: 'POST' });
+                await fetch('/api/stream/start', { method: 'POST', signal });
             } catch (e) {
-                setStreamUI('error');
+                if (e.name !== 'AbortError') setStreamUI('error');
                 return;
             }
 
-            // Give FFmpeg a moment to write the first segment
-            await new Promise(r => setTimeout(r, 2000));
+            const ready = await waitForStreamReady(signal);
+            if (!ready) {
+                if (!signal.aborted) setStreamUI('error');
+                return;
+            }
+
+            if (signal.aborted) return;
 
             const video = document.getElementById('liveVideo');
 
@@ -372,8 +438,11 @@
                 if (hlsInstance) hlsInstance.destroy();
                 hlsInstance = new Hls({
                     liveSyncDurationCount: 2,
-                    liveMaxLatencyDurationCount: 4,
-                    lowLatencyMode: true,
+                    liveMaxLatencyDurationCount: 5,
+                    maxBufferLength: 4,
+                    maxMaxBufferLength: 8,
+                    lowLatencyMode: false,
+                    startPosition: -1,
                 });
                 hlsInstance.loadSource('/api/stream/hls/stream.m3u8');
                 hlsInstance.attachMedia(video);
@@ -388,8 +457,7 @@
                     }
                 });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                // Safari native HLS
-                video.src = '/api/stream/hls/stream.m3u8';
+                video.src = '/api/stream/hls/stream.m3u8?t=' + Date.now();
                 video.play();
                 setStreamUI('on');
             } else {
@@ -399,6 +467,11 @@
         }
 
         async function stopStream() {
+            if (startAbortController) {
+                startAbortController.abort();
+                startAbortController = null;
+            }
+
             setStreamUI('stopping');
 
             if (hlsInstance) {
@@ -408,7 +481,8 @@
 
             const video = document.getElementById('liveVideo');
             video.pause();
-            video.src = '';
+            video.removeAttribute('src');
+            video.load();
 
             try {
                 await fetch('/api/stream/stop', { method: 'POST' });
@@ -423,6 +497,36 @@
             } else {
                 startStream();
             }
+        }
+
+        async function wakePC() {
+            const btn = document.getElementById('wolBtn');
+            const label = document.getElementById('wolStatusLabel');
+
+            btn.disabled = true;
+            label.style.color = '#888';
+            label.textContent = 'Sending\u2026';
+
+            try {
+                const res = await fetch('/api/wol', { method: 'POST' });
+                const data = await res.json();
+                if (data.status === 'sent') {
+                    label.style.color = '#28a745';
+                    label.textContent = '\u2714 Magic packet sent!';
+                } else {
+                    label.style.color = '#dc3545';
+                    label.textContent = '\u26a0 Error: ' + data.message;
+                }
+            } catch (e) {
+                label.style.color = '#dc3545';
+                label.textContent = '\u26a0 Request failed';
+            }
+
+            setTimeout(() => {
+                btn.disabled = false;
+                label.textContent = '';
+                label.style.color = '#888';
+            }, 5000);
         }
 
         async function loadRecordings() {
@@ -489,7 +593,6 @@
             }
         }
 
-        // Initialise UI state
         setStreamUI('off');
 
         window.addEventListener('load', () => {
