@@ -3,216 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Camera System</title>
+    <title>Camera</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
         }
-        
+
         body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background: #f5f6fa;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+            background: #f2f2f7;
             min-height: 100vh;
-            color: #333;
+            color: #1c1c1e;
         }
-        
+
         .container {
-            max-width: 1200px;
+            max-width: 780px;
             margin: 0 auto;
-            padding: 15px;
+            padding: 32px 20px 48px;
         }
-        
+
+        /* ── Status bar ── */
         .status-bar {
             display: flex;
-            gap: 10px;
-            align-items: center;
+            gap: 8px;
             justify-content: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
+            margin-bottom: 28px;
         }
-        
-        .status-indicator {
+
+        .pill {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 7px;
             background: white;
-            padding: 12px 18px;
-            border-radius: 25px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0,0,0,0.07);
+            padding: 7px 14px;
+            border-radius: 99px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #3a3a3c;
+            letter-spacing: -0.01em;
         }
-        
-        .status-dot {
-            width: 14px;
-            height: 14px;
+
+        .dot {
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
-            background: #28a745;
+            background: #34c759;
+            flex-shrink: 0;
         }
-        
-        .status-dot.disconnected {
-            background: #dc3545;
+
+        .dot.off { background: #ff3b30; }
+
+        .dot.recording {
+            background: #ff3b30;
+            animation: pulse 1.6s ease-in-out infinite;
         }
-        
-        .status-text {
-            font-weight: 600;
-            font-size: 16px;
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.45; transform: scale(0.8); }
         }
-        
-        .section {
+
+        /* ── Cards ── */
+        .card {
             background: white;
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-bottom: 15px;
-        }
-
-        .section-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            border-radius: 18px;
+            border: 1px solid rgba(0,0,0,0.06);
             margin-bottom: 12px;
+            overflow: hidden;
         }
 
-        .stream-controls {
+        .card-header { padding: 16px 20px; }
+
+        .card-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #8e8e93;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        /* ── Video ── */
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #111;
+        }
+
+        #liveVideo {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+        }
+
+        /* Overlays sit above the video but below native controls */
+        .video-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Allow clicks to pass through to native controls at the bottom */
+            pointer-events: none;
+        }
+
+        /* Re-enable pointer events only on the actual button */
+        .overlay-btn {
+            pointer-events: all;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.45);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.18s, transform 0.12s;
+            color: white;
+        }
+
+        .overlay-btn:hover {
+            background: rgba(0,0,0,0.62);
+            transform: scale(1.07);
+        }
+
+        .overlay-btn:active { transform: scale(0.95); }
+
+        /* Pause overlay only shows on hover */
+        .video-wrapper .video-overlay.live-overlay {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .video-wrapper:hover .video-overlay.live-overlay {
+            opacity: 1;
+        }
+
+        /* Loading overlay has a dim background */
+        #loadingOverlay { background: rgba(0,0,0,0.35); }
+
+        /* Spinner */
+        .spinner {
+            width: 28px;
+            height: 28px;
+            border: 2.5px solid rgba(255,255,255,0.2);
+            border-top-color: rgba(255,255,255,0.85);
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Pause icon */
+        .pause-icon {
+            display: inline-flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .pause-icon span {
+            display: block;
+            width: 4px;
+            height: 18px;
+            background: white;
+            border-radius: 2px;
+        }
+
+        /* Play triangle */
+        .play-icon {
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 11px 0 11px 20px;
+            border-color: transparent transparent transparent white;
+            margin-left: 4px;
+        }
+
+        /* ── WOL ── */
+        .card-body {
+            padding: 4px 20px 18px;
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        #streamToggleBtn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 9px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s, opacity 0.2s;
-            background: #28a745;
-            color: white;
-        }
-
-        #streamToggleBtn:hover {
-            opacity: 0.88;
-        }
-
-        #streamToggleBtn.active {
-            background: #dc3545;
-        }
-
-        #streamToggleBtn:disabled {
-            opacity: 0.55;
-            cursor: not-allowed;
-        }
-
-        #streamStatusLabel {
-            font-size: 13px;
-            color: #888;
         }
 
         #wolBtn {
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 9px 20px;
-            border: none;
-            border-radius: 8px;
+            gap: 7px;
+            padding: 8px 18px;
+            border-radius: 99px;
+            border: 1.5px solid #6e6cff;
+            background: transparent;
+            color: #6e6cff;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s, opacity 0.2s;
-            background: #6f42c1;
-            color: white;
+            letter-spacing: -0.01em;
+            width: fit-content;
+            white-space: nowrap;
+            transition: background 0.18s, color 0.18s, opacity 0.18s, transform 0.1s;
         }
 
-        #wolBtn:hover {
-            opacity: 0.88;
-        }
-
-        #wolBtn:disabled {
-            opacity: 0.55;
-            cursor: not-allowed;
-        }
+        #wolBtn:hover { background: #6e6cff; color: white; }
+        #wolBtn:active { transform: scale(0.96); }
+        #wolBtn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 
         #wolStatusLabel {
             font-size: 13px;
-            color: #888;
-        }
-        
-        .video-wrapper {
-            background: #000;
-            border-radius: 8px;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        #liveVideo {
-            width: 100%;
-            height: auto;
-            display: none;
-            background: #000;
+            color: #8e8e93;
         }
 
-        .stream-placeholder {
-            width: 100%;
-            aspect-ratio: 16/9;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #111;
-            color: #555;
-            font-size: 14px;
-            border-radius: 8px;
-            user-select: none;
-        }
-        
-        .recordings-container {
-            max-height: 70vh;
-            overflow-y: auto;
-        }
-        
-        .recordings-container h3 {
-            margin-bottom: 15px;
-            color: #2c3e50;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 8px;
-        }
-        
+        /* ── Recordings ── */
+        .recordings-list { padding: 0 8px 8px; }
+
         .recording-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            background: #f9f9f9;
+            padding: 11px 12px;
+            border-radius: 10px;
+            transition: background 0.15s;
         }
-        
-        .recording-item:hover {
-            background: #f0f0f0;
-        }
-        
+
+        .recording-item:hover { background: #f2f2f7; }
+
         .recording-info {
-            flex: 1;
             font-size: 14px;
-            color: #666;
+            color: #3a3a3c;
+            letter-spacing: -0.01em;
         }
-        
-        .recording-actions {
-            display: flex;
-            gap: 8px;
-        }
-        
+
+        .recording-actions { display: flex; gap: 6px; }
+
         .action-btn {
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
@@ -220,123 +254,137 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 14px;
+            background: #f2f2f7;
+            color: #1c1c1e;
+            transition: background 0.15s, transform 0.1s;
         }
-        
-        .btn-play {
-            background: #28a745;
-            color: white;
+
+        .action-btn:hover { background: #e5e5ea; }
+        .action-btn:active { transform: scale(0.92); }
+
+        /* ── Stats ── */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; }
+
+        .stat-item { padding: 16px 20px; text-align: center; }
+
+        .stat-item:first-child { border-right: 1px solid rgba(0,0,0,0.05); }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: #1c1c1e;
+            margin-bottom: 3px;
         }
-        
-        .btn-download {
-            background: #007bff;
-            color: white;
-        }
-        
-        .status-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 10px;
-        }
-        
-        .status-item {
-            text-align: center;
-            padding: 15px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        .status-value {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-        
-        .status-label {
-            color: #666;
+
+        .stat-label {
             font-size: 12px;
+            color: #8e8e93;
+            font-weight: 500;
         }
-        
-        .loading {
+
+        .state-msg {
             text-align: center;
-            color: #666;
-            padding: 20px;
+            font-size: 13px;
+            color: #8e8e93;
+            padding: 24px 20px;
         }
-        
-        .error {
-            text-align: center;
-            color: #dc3545;
-            padding: 20px;
-        }
-        
-        @media (max-width: 768px) {
-            .container { padding: 10px; }
-            .status-bar { gap: 8px; }
-            .status-indicator { padding: 10px 15px; }
-            .status-text { font-size: 14px; }
-            .section { padding: 12px; }
+
+        .state-msg.error { color: #ff3b30; }
+
+        @media (max-width: 600px) {
+            .container { padding: 20px 12px 40px; }
+            .card { border-radius: 14px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
+
+        <!-- Status pills -->
         <div class="status-bar">
-            <div class="status-indicator">
-                <div class="status-dot" id="connectionDot"></div>
-                <span class="status-text" id="connectionText">Connected</span>
+            <div class="pill">
+                <div class="dot" id="connectionDot"></div>
+                <span id="connectionText">Connected</span>
             </div>
-            <div class="status-indicator">
-                <div class="status-dot" id="recordingDot"></div>
-                <span class="status-text" id="recordingText">Recording</span>
+            <div class="pill">
+                <div class="dot" id="recordingDot"></div>
+                <span id="recordingText">Recording</span>
             </div>
         </div>
 
-        <!-- Live Stream Section -->
-        <div class="section">
-            <div class="section-title">Live View</div>
+        <!-- Live view card -->
+        <div class="card">
+            <div class="video-wrapper" id="videoWrapper">
 
-            <div class="stream-controls">
-                <button id="streamToggleBtn" onclick="toggleStream()">&#9654; Start Stream</button>
-                <span id="streamStatusLabel">Stream is off</span>
-            </div>
-
-            <div class="video-wrapper">
-                <div class="stream-placeholder" id="streamPlaceholder">
-                    No active stream
-                </div>
+                <!-- The video element — controls enabled for progress bar, fullscreen, etc. -->
                 <video id="liveVideo" autoplay muted playsinline controls></video>
+
+                <!-- Idle: centred play button -->
+                <div class="video-overlay" id="idleOverlay">
+                    <button class="overlay-btn" onclick="startStream()">
+                        <div class="play-icon"></div>
+                    </button>
+                </div>
+
+                <!-- Loading: spinner -->
+                <div class="video-overlay" id="loadingOverlay" style="display:none;">
+                    <div class="spinner"></div>
+                </div>
+
+                <!-- Live: translucent stop button, fades in on hover -->
+                <div class="video-overlay live-overlay" id="liveOverlay" style="display:none;">
+                    <button class="overlay-btn" onclick="stopStream()">
+                        <div style="width:16px;height:16px;background:white;border-radius:2px;"></div>
+                    </button>
+                </div>
+
+                <!-- Error: play/retry button -->
+                <div class="video-overlay" id="errorOverlay" style="display:none; background:rgba(0,0,0,0.5);">
+                    <button class="overlay-btn" onclick="startStream()">
+                        <div class="play-icon"></div>
+                    </button>
+                </div>
+
             </div>
         </div>
 
-        <!-- Wake on LAN Section -->
-        <div class="section">
-            <div class="section-title">Gaming PC</div>
-            <div class="stream-controls">
-                <button id="wolBtn" onclick="wakePC()">&#9889; Wake PC</button>
+        <!-- Gaming PC card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Christopher's Desktop</span>
+            </div>
+            <div class="card-body">
+                <button id="wolBtn" onclick="wakePC()">Wake</button>
                 <span id="wolStatusLabel"></span>
             </div>
         </div>
-        
-        <div class="section">
-            <div id="recordingsContainer" class="recordings-container">
-                <div class="loading">Loading recordings...</div>
+
+        <!-- Recordings card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Recordings</span>
+            </div>
+            <div id="recordingsContainer" class="recordings-list">
+                <div class="state-msg">Loading…</div>
             </div>
         </div>
-        
-        <div class="status-grid" id="statusGrid">
-            <div class="status-item">
-                <div class="status-value">...</div>
-                <div class="status-label">Disk Usage</div>
-            </div>
-            <div class="status-item">
-                <div class="status-value">...</div>
-                <div class="status-label">Free Space</div>
+
+        <!-- Storage card -->
+        <div class="card">
+            <div class="stats-grid" id="statusGrid">
+                <div class="stat-item">
+                    <div class="stat-value">—</div>
+                    <div class="stat-label">Disk Used</div>
+                </div>
+                <div class="stat-item" style="border-left:1px solid rgba(0,0,0,0.05)">
+                    <div class="stat-value">—</div>
+                    <div class="stat-label">Free Space</div>
+                </div>
             </div>
         </div>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -346,48 +394,31 @@
         let streamActive = false;
         let startAbortController = null;
 
-        function setStreamUI(state) {
-            const btn = document.getElementById('streamToggleBtn');
-            const label = document.getElementById('streamStatusLabel');
-            const video = document.getElementById('liveVideo');
-            const placeholder = document.getElementById('streamPlaceholder');
+        function showOverlay(name) {
+            document.getElementById('idleOverlay').style.display    = name === 'idle'    ? 'flex' : 'none';
+            document.getElementById('loadingOverlay').style.display = name === 'loading' ? 'flex' : 'none';
+            document.getElementById('liveOverlay').style.display    = name === 'live'    ? 'flex' : 'none';
+            document.getElementById('errorOverlay').style.display   = name === 'error'   ? 'flex' : 'none';
+        }
 
-            btn.disabled = (state === 'starting' || state === 'stopping');
+        function setStreamUI(state) {
+            const video = document.getElementById('liveVideo');
 
             if (state === 'off') {
                 streamActive = false;
-                btn.innerHTML = '&#9654; Start Stream';
-                btn.classList.remove('active');
-                label.textContent = 'Stream is off';
-                video.style.display = 'none';
-                placeholder.style.display = 'flex';
-                placeholder.textContent = 'No active stream';
+                // Keep last frame — just show idle overlay on top
+                showOverlay('idle');
             } else if (state === 'starting') {
-                btn.innerHTML = '&#8987; Starting\u2026';
-                btn.classList.remove('active');
-                label.textContent = 'Connecting\u2026';
-                placeholder.style.display = 'flex';
-                placeholder.textContent = 'Starting stream\u2026';
-                video.style.display = 'none';
+                showOverlay('loading');
             } else if (state === 'on') {
                 streamActive = true;
-                btn.innerHTML = '&#9646;&#9646; Stop Stream';
-                btn.classList.add('active');
-                label.textContent = 'Stream is live';
-                placeholder.style.display = 'none';
-                video.style.display = 'block';
+                showOverlay('live');
             } else if (state === 'stopping') {
-                btn.innerHTML = '&#8987; Stopping\u2026';
-                label.textContent = 'Stopping\u2026';
+                // Keep live overlay while the stop request is in-flight
+                showOverlay('live');
             } else if (state === 'error') {
                 streamActive = false;
-                btn.innerHTML = '&#9654; Retry Stream';
-                btn.classList.remove('active');
-                btn.disabled = false;
-                label.textContent = 'Stream error';
-                video.style.display = 'none';
-                placeholder.style.display = 'flex';
-                placeholder.textContent = '\u26a0 Stream error \u2014 press Start to retry';
+                showOverlay('error');
             }
         }
 
@@ -396,12 +427,9 @@
             while (Date.now() < deadline) {
                 if (signal.aborted) return false;
                 try {
-                    const res = await fetch('/api/stream/status', { signal });
+                    const res  = await fetch('/api/stream/status', { signal });
                     const data = await res.json();
                     if (data.ready) return true;
-                    const count = data.count || 0;
-                    const placeholder = document.getElementById('streamPlaceholder');
-                    if (placeholder) placeholder.textContent = `Building stream\u2026 (${count} segment${count !== 1 ? 's' : ''})`;
                 } catch (e) {
                     if (e.name === 'AbortError') return false;
                 }
@@ -462,7 +490,6 @@
                 setStreamUI('on');
             } else {
                 setStreamUI('error');
-                document.getElementById('streamPlaceholder').textContent = '\u26a0 HLS not supported in this browser';
             }
         }
 
@@ -479,10 +506,9 @@
                 hlsInstance = null;
             }
 
+            // Pause but keep src so last frame stays frozen
             const video = document.getElementById('liveVideo');
             video.pause();
-            video.removeAttribute('src');
-            video.load();
 
             try {
                 await fetch('/api/stream/stop', { method: 'POST' });
@@ -491,41 +517,32 @@
             setStreamUI('off');
         }
 
-        function toggleStream() {
-            if (streamActive) {
-                stopStream();
-            } else {
-                startStream();
-            }
-        }
-
         async function wakePC() {
-            const btn = document.getElementById('wolBtn');
+            const btn   = document.getElementById('wolBtn');
             const label = document.getElementById('wolStatusLabel');
 
             btn.disabled = true;
-            label.style.color = '#888';
+            label.style.color = '#8e8e93';
             label.textContent = 'Sending\u2026';
 
             try {
-                const res = await fetch('/api/wol', { method: 'POST' });
+                const res  = await fetch('/api/wol', { method: 'POST' });
                 const data = await res.json();
                 if (data.status === 'sent') {
-                    label.style.color = '#28a745';
-                    label.textContent = '\u2714 Magic packet sent!';
+                    label.style.color = '#34c759';
+                    label.textContent = '\u2714 Sent';
                 } else {
-                    label.style.color = '#dc3545';
-                    label.textContent = '\u26a0 Error: ' + data.message;
+                    label.style.color = '#ff3b30';
+                    label.textContent = '\u26a0 ' + data.message;
                 }
             } catch (e) {
-                label.style.color = '#dc3545';
-                label.textContent = '\u26a0 Request failed';
+                label.style.color = '#ff3b30';
+                label.textContent = '\u26a0 Failed';
             }
 
             setTimeout(() => {
                 btn.disabled = false;
                 label.textContent = '';
-                label.style.color = '#888';
             }, 5000);
         }
 
@@ -538,24 +555,24 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const recordings = await response.json();
                 if (!recordings || recordings.length === 0) {
-                    container.innerHTML = '<div class="loading">No recordings found</div>';
+                    container.innerHTML = '<div class="state-msg">No recordings yet</div>';
                     return;
                 }
-                let html = '<h3>Recordings</h3>';
+                let html = '';
                 for (const recording of recordings) {
                     html += `
                         <div class="recording-item">
-                            <div class="recording-info">${recording.display_name}</div>
+                            <span class="recording-info">${recording.display_name}</span>
                             <div class="recording-actions">
-                                <a href="/api/play/${recording.filename}" target="_blank" class="action-btn btn-play">&#9654;</a>
-                                <a href="/api/download/${recording.filename}" class="action-btn btn-download">&#8595;</a>
+                                <a href="/api/play/${recording.filename}" target="_blank" class="action-btn" title="Play">&#9654;</a>
+                                <a href="/api/download/${recording.filename}" class="action-btn" title="Download">&#8595;</a>
                             </div>
                         </div>
                     `;
                 }
                 container.innerHTML = html;
             } catch (error) {
-                container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                container.innerHTML = `<div class="state-msg error">Error: ${error.message}</div>`;
             } finally {
                 isLoading = false;
             }
@@ -567,33 +584,38 @@
                 if (!response.ok) throw new Error('Failed');
                 const data = await response.json();
 
-                document.getElementById('connectionDot').className = 'status-dot';
+                document.getElementById('connectionDot').className = 'dot';
                 document.getElementById('connectionText').textContent = 'Connected';
 
-                const recDot = document.getElementById('recordingDot');
+                const recDot  = document.getElementById('recordingDot');
                 const recText = document.getElementById('recordingText');
                 if (data.recording_status === 'active') {
-                    recDot.className = 'status-dot';
+                    recDot.className = 'dot recording';
                     recText.textContent = 'Recording';
                 } else {
-                    recDot.className = 'status-dot disconnected';
+                    recDot.className = 'dot off';
                     recText.textContent = 'Not Recording';
                 }
 
-                const diskPercent = data.disk_usage ? Math.round(data.disk_usage.percent) + '%' : 'N/A';
-                const freeSpace = data.disk_usage ? Math.round(data.disk_usage.free / (1024*1024*1024)) + ' GB' : 'N/A';
+                const diskPercent = data.disk_usage ? Math.round(data.disk_usage.percent) + '%' : '—';
+                const freeSpace   = data.disk_usage ? Math.round(data.disk_usage.free / (1024*1024*1024)) + ' GB' : '—';
                 document.getElementById('statusGrid').innerHTML = `
-                    <div class="status-item"><div class="status-value">${diskPercent}</div><div class="status-label">Disk Usage</div></div>
-                    <div class="status-item"><div class="status-value">${freeSpace}</div><div class="status-label">Free Space</div></div>
+                    <div class="stat-item">
+                        <div class="stat-value">${diskPercent}</div>
+                        <div class="stat-label">Disk Used</div>
+                    </div>
+                    <div class="stat-item" style="border-left:1px solid rgba(0,0,0,0.05)">
+                        <div class="stat-value">${freeSpace}</div>
+                        <div class="stat-label">Free Space</div>
+                    </div>
                 `;
             } catch {
-                ['connectionDot','recordingDot'].forEach(id => document.getElementById(id).className = 'status-dot disconnected');
-                document.getElementById('connectionText').textContent = 'Error';
-                document.getElementById('recordingText').textContent = 'Error';
+                document.getElementById('connectionDot').className = 'dot off';
+                document.getElementById('connectionText').textContent = 'Disconnected';
             }
         }
 
-        setStreamUI('off');
+        showOverlay('idle');
 
         window.addEventListener('load', () => {
             updateStatus();

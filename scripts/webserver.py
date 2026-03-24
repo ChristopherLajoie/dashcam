@@ -21,8 +21,14 @@ hls_lock = threading.Lock()
 
 
 def purge_hls_dir():
-    """Remove all stale HLS segments and playlist from the previous session."""
-    for f in glob.glob(os.path.join(HLS_DIR, "*.ts")) + glob.glob(os.path.join(HLS_DIR, "*.m3u8")):
+    """Remove stale .ts segments only. Leave .m3u8 for FFmpeg to overwrite cleanly."""
+    for f in glob.glob(os.path.join(HLS_DIR, "*.ts")):
+        try:
+            os.remove(f)
+        except OSError:
+            pass
+    # Also remove any leftover .tmp files from a crashed previous session
+    for f in glob.glob(os.path.join(HLS_DIR, "*.tmp")):
         try:
             os.remove(f)
         except OSError:
@@ -81,7 +87,7 @@ def stream_start():
 def stream_stop():
     with hls_lock:
         stop_hls()
-        purge_hls_dir()
+        purge_hls_dir()  # now only removes .ts and .tmp, not .m3u8
     return jsonify({"status": "stopped"})
 
 
