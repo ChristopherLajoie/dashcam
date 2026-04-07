@@ -19,15 +19,17 @@ HLS_DIR = "/tmp/hls"
 hls_process = None
 hls_lock = threading.Lock()
 
+# Cached stream info so we don't probe on every request
+_stream_info_cache = {"fps": None, "resolution": None, "fetched_at": 0}
+_stream_info_lock = threading.Lock()
+
 
 def purge_hls_dir():
-    """Remove stale .ts segments only. Leave .m3u8 for FFmpeg to overwrite cleanly."""
     for f in glob.glob(os.path.join(HLS_DIR, "*.ts")):
         try:
             os.remove(f)
         except OSError:
             pass
-    # Also remove any leftover .tmp files from a crashed previous session
     for f in glob.glob(os.path.join(HLS_DIR, "*.tmp")):
         try:
             os.remove(f)
@@ -54,7 +56,9 @@ def start_hls():
         "-hls_segment_filename", f"{HLS_DIR}/seg%03d.ts",
         f"{HLS_DIR}/stream.m3u8",
     ]
-    hls_process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    os.makedirs(LOGS_DIR, exist_ok=True)
+    ffmpeg_log = open(os.path.join(LOGS_DIR, "ffmpeg_stream.log"), "w")
+    hls_process = subprocess.Popen(cmd, stdout=ffmpeg_log, stderr=ffmpeg_log)
 
 
 def stop_hls():
@@ -63,6 +67,45 @@ def stop_hls():
         hls_process.kill()
         hls_process.wait()
         hls_process = None
+
+
+def probe_stream_info():
+    """Use ffprobe to get FPS and resolution from the RTSP stream. Cached for 60s."""
+    with _stream_info_lock:
+        now = time.time()
+        if now - _stream_info_cache["fetched_at"] < 60 and _stream_info_cache["fps"]:
+            return _stream_info_cache.copy()
+
+        try:
+            cmd = [
+                "ffprobe",
+                "-v", "quiet",
+                "-rtsp_transport", "tcp",
+                "-show_streams",
+                "-select_streams", "v:0",
+                "-of", "json",
+                RTSP_URL,
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=8)
+            if result.returncode == 0:
+                data = json.loads(result.stdout)
+                stream = data.get("streams", [{}])[0]
+
+                width  = stream.get("width", 0)
+                height = stream.get("height", 0)
+
+                # fps is stored as a fraction e.g. "15/1" or "30000/1001"
+                fps_raw = stream.get("r_frame_rate", "0/1")
+                num, den = fps_raw.split("/")
+                fps = round(int(num) / int(den), 1) if int(den) else 0
+
+                _stream_info_cache["fps"]        = fps
+                _stream_info_cache["resolution"] = f"{width}x{height}"
+                _stream_info_cache["fetched_at"] = now
+        except Exception:
+            pass
+
+        return _stream_info_cache.copy()
 
 
 @app.route("/")
@@ -87,7 +130,7 @@ def stream_start():
 def stream_stop():
     with hls_lock:
         stop_hls()
-        purge_hls_dir()  # now only removes .ts and .tmp, not .m3u8
+        purge_hls_dir()
     return jsonify({"status": "stopped"})
 
 
@@ -100,6 +143,15 @@ def stream_status():
     if len(segments) < 2:
         return jsonify({"ready": False, "reason": "segments_building", "count": len(segments)})
     return jsonify({"ready": True, "segments": len(segments)})
+
+
+@app.route("/api/stream/info")
+def stream_info():
+    info = probe_stream_info()
+    return jsonify({
+        "fps":        info.get("fps"),
+        "resolution": info.get("resolution"),
+    })
 
 
 @app.route("/api/stream/hls/<path:filename>")
@@ -154,13 +206,13 @@ def debug_recordings():
     debug_info = {}
     try:
         debug_info["recordings_dir_exists"] = os.path.exists(RECORDINGS_DIR)
-        debug_info["recordings_dir_path"] = RECORDINGS_DIR
+        debug_info["recordings_dir_path"]   = RECORDINGS_DIR
         if os.path.exists(RECORDINGS_DIR):
             debug_info["recordings_dir_readable"] = os.access(RECORDINGS_DIR, os.R_OK)
             try:
                 files = [f for f in os.listdir(RECORDINGS_DIR) if f.endswith(".mp4")]
                 debug_info["recording_files"] = files
-                debug_info["num_recordings"] = len(files)
+                debug_info["num_recordings"]  = len(files)
                 metadata_file = os.path.join(RECORDINGS_DIR, "recordings.json")
                 debug_info["metadata_exists"] = os.path.exists(metadata_file)
                 if os.path.exists(metadata_file):
@@ -168,7 +220,7 @@ def debug_recordings():
                         with open(metadata_file, "r") as f:
                             metadata = json.load(f)
                         debug_info["metadata_valid"] = True
-                        debug_info["metadata_keys"] = list(metadata.keys())
+                        debug_info["metadata_keys"]  = list(metadata.keys())
                     except Exception as e:
                         debug_info["metadata_valid"] = False
                         debug_info["metadata_error"] = str(e)
@@ -217,8 +269,8 @@ def get_recordings():
                         except ValueError:
                             recording_num = 0
                         all_recordings.append({
-                            "filename": f,
-                            "duration": duration,
+                            "filename":     f,
+                            "duration":     duration,
                             "recording_num": recording_num,
                         })
         except Exception:
@@ -228,7 +280,7 @@ def get_recordings():
         recordings_list = []
         for i, rec in enumerate(all_recordings):
             recordings_list.append({
-                "filename": rec["filename"],
+                "filename":     rec["filename"],
                 "display_name": f"Recording #{i+1} - {rec['duration']}",
             })
         return jsonify(recordings_list)
@@ -258,17 +310,20 @@ def play_recording(filename):
 @app.route("/api/status")
 def get_status():
     import psutil
+
+    # Disk
     try:
         usage = psutil.disk_usage(RECORDINGS_DIR)
         disk_usage = {
-            "total": usage.total,
-            "used": usage.used,
-            "free": usage.free,
+            "total":   usage.total,
+            "used":    usage.used,
+            "free":    usage.free,
             "percent": (usage.used / usage.total) * 100,
         }
     except Exception:
         disk_usage = {"total": 0, "used": 0, "free": 0, "percent": 0}
 
+    # Recording service
     recording_status = "unknown"
     try:
         result = subprocess.run(
@@ -279,22 +334,43 @@ def get_status():
     except Exception:
         pass
 
-    network_info = {}
+    # Network — collect all non-loopback IPv4 addresses with their interface names
+    network_interfaces = []
     try:
-        result = subprocess.run(["ip", "addr", "show", "uap0"], capture_output=True, text=True)
-        if "10.42.0.1" in result.stdout:
-            network_info["hotspot"] = "active"
-            network_info["ip"] = "10.42.0.1"
-        else:
-            network_info["hotspot"] = "inactive"
+        for iface, addrs in psutil.net_if_addrs().items():
+            if iface == "lo":
+                continue
+            for addr in addrs:
+                if addr.family == 2:  # AF_INET = IPv4
+                    network_interfaces.append({"interface": iface, "ip": addr.address})
     except Exception:
-        network_info["hotspot"] = "unknown"
+        pass
+
+    # CPU & temperature
+    cpu_percent = None
+    cpu_temp    = None
+    try:
+        cpu_percent = psutil.cpu_percent(interval=0.5)
+    except Exception:
+        pass
+    try:
+        result = subprocess.run(
+            ["vcgencmd", "measure_temp"],
+            capture_output=True, text=True, timeout=3
+        )
+        # Output: "temp=42.8'C"
+        if result.returncode == 0:
+            cpu_temp = result.stdout.strip().replace("temp=", "").replace("'C", "°C")
+    except Exception:
+        pass
 
     return jsonify({
-        "disk_usage": disk_usage,
-        "recording_status": recording_status,
-        "network": network_info,
-        "timestamp": datetime.now().isoformat(),
+        "disk_usage":          disk_usage,
+        "recording_status":    recording_status,
+        "network_interfaces":  network_interfaces,
+        "cpu_percent":         cpu_percent,
+        "cpu_temp":            cpu_temp,
+        "timestamp":           datetime.now().isoformat(),
     })
 
 

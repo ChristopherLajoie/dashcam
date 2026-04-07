@@ -31,6 +31,7 @@
             gap: 8px;
             justify-content: center;
             margin-bottom: 28px;
+            flex-wrap: wrap;
         }
 
         .pill {
@@ -76,7 +77,9 @@
             overflow: hidden;
         }
 
-        .card-header { padding: 16px 20px; }
+        .card-header {
+            padding: 16px 20px 0;
+        }
 
         .card-title {
             font-size: 12px;
@@ -101,18 +104,64 @@
             object-fit: cover;
         }
 
-        /* Overlays sit above the video but below native controls */
+        /* Clock + date overlay — top left */
+        .video-clock {
+            position: absolute;
+            top: 12px;
+            left: 14px;
+            color: white;
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+            line-height: 1.2;
+        }
+
+        .video-clock .clock-time {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .video-clock .clock-date {
+            font-size: 11px;
+            font-weight: 400;
+            opacity: 0.85;
+            letter-spacing: 0.01em;
+        }
+
+        /* FPS + resolution badge — top right */
+        .video-badge {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            background: rgba(0,0,0,0.45);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            color: white;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 4px 9px;
+            border-radius: 99px;
+            pointer-events: none;
+            z-index: 10;
+            letter-spacing: 0.01em;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .video-badge.visible { opacity: 1; }
+
+        /* Overlays */
         .video-overlay {
             position: absolute;
             inset: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            /* Allow clicks to pass through to native controls at the bottom */
             pointer-events: none;
         }
 
-        /* Re-enable pointer events only on the actual button */
         .overlay-btn {
             pointer-events: all;
             width: 64px;
@@ -130,27 +179,18 @@
             color: white;
         }
 
-        .overlay-btn:hover {
-            background: rgba(0,0,0,0.62);
-            transform: scale(1.07);
-        }
-
+        .overlay-btn:hover { background: rgba(0,0,0,0.62); transform: scale(1.07); }
         .overlay-btn:active { transform: scale(0.95); }
 
-        /* Pause overlay only shows on hover */
         .video-wrapper .video-overlay.live-overlay {
             opacity: 0;
             transition: opacity 0.2s;
         }
 
-        .video-wrapper:hover .video-overlay.live-overlay {
-            opacity: 1;
-        }
+        .video-wrapper:hover .video-overlay.live-overlay { opacity: 1; }
 
-        /* Loading overlay has a dim background */
         #loadingOverlay { background: rgba(0,0,0,0.35); }
 
-        /* Spinner */
         .spinner {
             width: 28px;
             height: 28px;
@@ -162,22 +202,13 @@
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Pause icon */
-        .pause-icon {
-            display: inline-flex;
-            gap: 4px;
-            align-items: center;
-        }
-
-        .pause-icon span {
-            display: block;
-            width: 4px;
-            height: 18px;
+        .stop-icon {
+            width: 16px;
+            height: 16px;
             background: white;
             border-radius: 2px;
         }
 
-        /* Play triangle */
         .play-icon {
             width: 0;
             height: 0;
@@ -189,7 +220,7 @@
 
         /* ── WOL ── */
         .card-body {
-            padding: 4px 20px 18px;
+            padding: 12px 20px 18px;
             display: flex;
             align-items: center;
             gap: 12px;
@@ -217,9 +248,98 @@
         #wolBtn:active { transform: scale(0.96); }
         #wolBtn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 
-        #wolStatusLabel {
-            font-size: 13px;
+        #wolStatusLabel { font-size: 13px; color: #8e8e93; }
+
+        /* ── Disk progress bar ── */
+        .disk-section { padding: 14px 20px 18px; }
+
+        .disk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 8px;
+        }
+
+        .disk-label { font-size: 13px; color: #3a3a3c; font-weight: 500; }
+
+        .disk-values { font-size: 12px; color: #8e8e93; }
+
+        .progress-track {
+            width: 100%;
+            height: 6px;
+            background: #f2f2f7;
+            border-radius: 99px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 99px;
+            background: #34c759;
+            transition: width 0.5s ease, background 0.3s;
+            width: 0%;
+        }
+
+        .progress-fill.warn  { background: #ff9f0a; }
+        .progress-fill.crit  { background: #ff3b30; }
+
+        /* ── System info grid ── */
+        .sys-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .sys-item {
+            padding: 14px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .sys-item:nth-child(odd) { border-right: 1px solid rgba(0,0,0,0.05); }
+
+        .sys-item-label {
+            font-size: 11px;
+            font-weight: 600;
             color: #8e8e93;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .sys-item-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1c1c1e;
+            letter-spacing: -0.02em;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ── Network interfaces ── */
+        .net-list { padding: 8px 20px 14px; }
+
+        .net-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 7px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+            font-size: 13px;
+        }
+
+        .net-row:last-child { border-bottom: none; }
+
+        .net-iface {
+            font-weight: 600;
+            color: #3a3a3c;
+            font-family: "SF Mono", "Fira Mono", monospace;
+            font-size: 12px;
+        }
+
+        .net-ip {
+            color: #8e8e93;
+            font-family: "SF Mono", "Fira Mono", monospace;
+            font-size: 12px;
         }
 
         /* ── Recordings ── */
@@ -236,11 +356,7 @@
 
         .recording-item:hover { background: #f2f2f7; }
 
-        .recording-info {
-            font-size: 14px;
-            color: #3a3a3c;
-            letter-spacing: -0.01em;
-        }
+        .recording-info { font-size: 14px; color: #3a3a3c; letter-spacing: -0.01em; }
 
         .recording-actions { display: flex; gap: 6px; }
 
@@ -263,27 +379,6 @@
         .action-btn:hover { background: #e5e5ea; }
         .action-btn:active { transform: scale(0.92); }
 
-        /* ── Stats ── */
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; }
-
-        .stat-item { padding: 16px 20px; text-align: center; }
-
-        .stat-item:first-child { border-right: 1px solid rgba(0,0,0,0.05); }
-
-        .stat-value {
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            color: #1c1c1e;
-            margin-bottom: 3px;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: #8e8e93;
-            font-weight: 500;
-        }
-
         .state-msg {
             text-align: center;
             font-size: 13px;
@@ -296,6 +391,7 @@
         @media (max-width: 600px) {
             .container { padding: 20px 12px 40px; }
             .card { border-radius: 14px; }
+            .sys-grid { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
@@ -317,40 +413,46 @@
         <!-- Live view card -->
         <div class="card">
             <div class="video-wrapper" id="videoWrapper">
-
-                <!-- The video element — controls enabled for progress bar, fullscreen, etc. -->
                 <video id="liveVideo" autoplay muted playsinline controls></video>
 
-                <!-- Idle: centred play button -->
+                <!-- Clock overlay -->
+                <div class="video-clock" id="videoClock">
+                    <div class="clock-time" id="clockTime">--:--:--</div>
+                    <div class="clock-date" id="clockDate">---</div>
+                </div>
+
+                <!-- FPS / resolution badge -->
+                <div class="video-badge" id="videoBadge">-- fps · ----</div>
+
+                <!-- Idle overlay -->
                 <div class="video-overlay" id="idleOverlay">
                     <button class="overlay-btn" onclick="startStream()">
                         <div class="play-icon"></div>
                     </button>
                 </div>
 
-                <!-- Loading: spinner -->
+                <!-- Loading overlay -->
                 <div class="video-overlay" id="loadingOverlay" style="display:none;">
                     <div class="spinner"></div>
                 </div>
 
-                <!-- Live: translucent stop button, fades in on hover -->
+                <!-- Live overlay (hover to reveal stop) -->
                 <div class="video-overlay live-overlay" id="liveOverlay" style="display:none;">
                     <button class="overlay-btn" onclick="stopStream()">
-                        <div style="width:16px;height:16px;background:white;border-radius:2px;"></div>
+                        <div class="stop-icon"></div>
                     </button>
                 </div>
 
-                <!-- Error: play/retry button -->
+                <!-- Error overlay -->
                 <div class="video-overlay" id="errorOverlay" style="display:none; background:rgba(0,0,0,0.5);">
                     <button class="overlay-btn" onclick="startStream()">
                         <div class="play-icon"></div>
                     </button>
                 </div>
-
             </div>
         </div>
 
-        <!-- Gaming PC card -->
+        <!-- Christopher's Desktop card -->
         <div class="card">
             <div class="card-header">
                 <span class="card-title">Christopher's Desktop</span>
@@ -371,16 +473,40 @@
             </div>
         </div>
 
-        <!-- Storage card -->
+        <!-- System card -->
         <div class="card">
-            <div class="stats-grid" id="statusGrid">
-                <div class="stat-item">
-                    <div class="stat-value">—</div>
-                    <div class="stat-label">Disk Used</div>
+            <div class="card-header" style="padding-bottom: 14px;">
+                <span class="card-title">System</span>
+            </div>
+
+            <!-- Disk progress -->
+            <div class="disk-section">
+                <div class="disk-header">
+                    <span class="disk-label">Storage</span>
+                    <span class="disk-values" id="diskValues">— GB used · — GB free</span>
                 </div>
-                <div class="stat-item" style="border-left:1px solid rgba(0,0,0,0.05)">
-                    <div class="stat-value">—</div>
-                    <div class="stat-label">Free Space</div>
+                <div class="progress-track">
+                    <div class="progress-fill" id="diskBar"></div>
+                </div>
+            </div>
+
+            <!-- CPU + temp grid -->
+            <div class="sys-grid">
+                <div class="sys-item">
+                    <span class="sys-item-label">CPU</span>
+                    <span class="sys-item-value" id="cpuVal">—</span>
+                </div>
+                <div class="sys-item">
+                    <span class="sys-item-label">Temperature</span>
+                    <span class="sys-item-value" id="tempVal">—</span>
+                </div>
+            </div>
+
+            <!-- Network interfaces -->
+            <div class="net-list" id="netList">
+                <div class="net-row">
+                    <span class="net-iface">—</span>
+                    <span class="net-ip">Loading…</span>
                 </div>
             </div>
         </div>
@@ -394,6 +520,37 @@
         let streamActive = false;
         let startAbortController = null;
 
+        /* ── Clock ── */
+        function updateClock() {
+            const now = new Date();
+            const hh  = String(now.getHours()).padStart(2, '0');
+            const mm  = String(now.getMinutes()).padStart(2, '0');
+            const ss  = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('clockTime').textContent = `${hh}:${mm}:${ss}`;
+
+            const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            document.getElementById('clockDate').textContent =
+                `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()} ${now.getFullYear()}`;
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        /* ── Stream info badge ── */
+        async function fetchStreamInfo() {
+            try {
+                const res  = await fetch('/api/stream/info');
+                const data = await res.json();
+                if (data.fps && data.resolution) {
+                    document.getElementById('videoBadge').textContent =
+                        `${data.fps} fps · ${data.resolution}`;
+                    document.getElementById('videoBadge').classList.add('visible');
+                }
+            } catch (e) { /* silent */ }
+        }
+
+        /* ── Overlays ── */
         function showOverlay(name) {
             document.getElementById('idleOverlay').style.display    = name === 'idle'    ? 'flex' : 'none';
             document.getElementById('loadingOverlay').style.display = name === 'loading' ? 'flex' : 'none';
@@ -402,23 +559,22 @@
         }
 
         function setStreamUI(state) {
-            const video = document.getElementById('liveVideo');
-
             if (state === 'off') {
                 streamActive = false;
-                // Keep last frame — just show idle overlay on top
                 showOverlay('idle');
+                document.getElementById('videoBadge').classList.remove('visible');
             } else if (state === 'starting') {
                 showOverlay('loading');
             } else if (state === 'on') {
                 streamActive = true;
                 showOverlay('live');
+                fetchStreamInfo();
             } else if (state === 'stopping') {
-                // Keep live overlay while the stop request is in-flight
                 showOverlay('live');
             } else if (state === 'error') {
                 streamActive = false;
                 showOverlay('error');
+                document.getElementById('videoBadge').classList.remove('visible');
             }
         }
 
@@ -506,7 +662,6 @@
                 hlsInstance = null;
             }
 
-            // Pause but keep src so last frame stays frozen
             const video = document.getElementById('liveVideo');
             video.pause();
 
@@ -517,6 +672,7 @@
             setStreamUI('off');
         }
 
+        /* ── WOL ── */
         async function wakePC() {
             const btn   = document.getElementById('wolBtn');
             const label = document.getElementById('wolStatusLabel');
@@ -540,12 +696,10 @@
                 label.textContent = '\u26a0 Failed';
             }
 
-            setTimeout(() => {
-                btn.disabled = false;
-                label.textContent = '';
-            }, 5000);
+            setTimeout(() => { btn.disabled = false; label.textContent = ''; }, 5000);
         }
 
+        /* ── Recordings ── */
         async function loadRecordings() {
             if (isLoading) return;
             isLoading = true;
@@ -567,8 +721,7 @@
                                 <a href="/api/play/${recording.filename}" target="_blank" class="action-btn" title="Play">&#9654;</a>
                                 <a href="/api/download/${recording.filename}" class="action-btn" title="Download">&#8595;</a>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 }
                 container.innerHTML = html;
             } catch (error) {
@@ -578,12 +731,14 @@
             }
         }
 
+        /* ── Status ── */
         async function updateStatus() {
             try {
                 const response = await fetch('/api/status');
                 if (!response.ok) throw new Error('Failed');
                 const data = await response.json();
 
+                // Pills
                 document.getElementById('connectionDot').className = 'dot';
                 document.getElementById('connectionText').textContent = 'Connected';
 
@@ -597,18 +752,40 @@
                     recText.textContent = 'Not Recording';
                 }
 
-                const diskPercent = data.disk_usage ? Math.round(data.disk_usage.percent) + '%' : '—';
-                const freeSpace   = data.disk_usage ? Math.round(data.disk_usage.free / (1024*1024*1024)) + ' GB' : '—';
-                document.getElementById('statusGrid').innerHTML = `
-                    <div class="stat-item">
-                        <div class="stat-value">${diskPercent}</div>
-                        <div class="stat-label">Disk Used</div>
-                    </div>
-                    <div class="stat-item" style="border-left:1px solid rgba(0,0,0,0.05)">
-                        <div class="stat-value">${freeSpace}</div>
-                        <div class="stat-label">Free Space</div>
-                    </div>
-                `;
+                // Disk progress bar
+                if (data.disk_usage) {
+                    const pct     = Math.round(data.disk_usage.percent);
+                    const usedGB  = (data.disk_usage.used  / 1e9).toFixed(1);
+                    const freeGB  = (data.disk_usage.free  / 1e9).toFixed(1);
+                    const totalGB = (data.disk_usage.total / 1e9).toFixed(1);
+
+                    document.getElementById('diskValues').textContent =
+                        `${usedGB} GB used · ${freeGB} GB free of ${totalGB} GB`;
+
+                    const bar = document.getElementById('diskBar');
+                    bar.style.width = pct + '%';
+                    bar.className = 'progress-fill' +
+                        (pct >= 90 ? ' crit' : pct >= 75 ? ' warn' : '');
+                }
+
+                // CPU + temp
+                document.getElementById('cpuVal').textContent =
+                    data.cpu_percent != null ? data.cpu_percent.toFixed(1) + '%' : '—';
+                document.getElementById('tempVal').textContent =
+                    data.cpu_temp || '—';
+
+                // Network interfaces
+                const netList = document.getElementById('netList');
+                if (data.network_interfaces && data.network_interfaces.length > 0) {
+                    netList.innerHTML = data.network_interfaces.map(n => `
+                        <div class="net-row">
+                            <span class="net-iface">${n.interface}</span>
+                            <span class="net-ip">${n.ip}</span>
+                        </div>`).join('');
+                } else {
+                    netList.innerHTML = '<div class="net-row"><span class="net-iface">—</span><span class="net-ip">No interfaces</span></div>';
+                }
+
             } catch {
                 document.getElementById('connectionDot').className = 'dot off';
                 document.getElementById('connectionText').textContent = 'Disconnected';
