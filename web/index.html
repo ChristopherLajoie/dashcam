@@ -218,7 +218,7 @@
             margin-left: 4px;
         }
 
-        /* ── WOL ── */
+        /* ── Card body (WOL + Recording share layout) ── */
         .card-body {
             padding: 12px 20px 18px;
             display: flex;
@@ -226,29 +226,46 @@
             gap: 12px;
         }
 
-        #wolBtn {
+        /* ── Generic action button (outline pill) ── */
+        .action-pill-btn {
             display: inline-flex;
             align-items: center;
             gap: 7px;
             padding: 8px 18px;
             border-radius: 99px;
-            border: 1.5px solid #6e6cff;
-            background: transparent;
-            color: #6e6cff;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             letter-spacing: -0.01em;
-            width: fit-content;
             white-space: nowrap;
             transition: background 0.18s, color 0.18s, opacity 0.18s, transform 0.1s;
         }
 
-        #wolBtn:hover { background: #6e6cff; color: white; }
-        #wolBtn:active { transform: scale(0.96); }
-        #wolBtn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+        .action-pill-btn:active { transform: scale(0.96); }
+        .action-pill-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 
-        #wolStatusLabel { font-size: 13px; color: #8e8e93; }
+        /* WOL — indigo */
+        #wolBtn {
+            border: 1.5px solid #6e6cff;
+            background: transparent;
+            color: #6e6cff;
+        }
+        #wolBtn:hover:not(:disabled) { background: #6e6cff; color: white; }
+
+        /* Record — red when idle, gray when active */
+        #recordBtn {
+            border: 1.5px solid #ff3b30;
+            background: transparent;
+            color: #ff3b30;
+        }
+        #recordBtn:hover:not(:disabled) { background: #ff3b30; color: white; }
+        #recordBtn.is-recording {
+            border-color: #8e8e93;
+            color: #8e8e93;
+        }
+        #recordBtn.is-recording:hover:not(:disabled) { background: #8e8e93; color: white; }
+
+        .status-label { font-size: 13px; color: #8e8e93; }
 
         /* ── Disk progress bar ── */
         .disk-section { padding: 14px 20px 18px; }
@@ -283,40 +300,8 @@
         .progress-fill.warn  { background: #ff9f0a; }
         .progress-fill.crit  { background: #ff3b30; }
 
-        /* ── System info grid ── */
-        .sys-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            border-top: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .sys-item {
-            padding: 14px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-
-        .sys-item:nth-child(odd) { border-right: 1px solid rgba(0,0,0,0.05); }
-
-        .sys-item-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: #8e8e93;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .sys-item-value {
-            font-size: 15px;
-            font-weight: 600;
-            color: #1c1c1e;
-            letter-spacing: -0.02em;
-            font-variant-numeric: tabular-nums;
-        }
-
         /* ── Network interfaces ── */
-        .net-list { padding: 8px 20px 14px; }
+        .net-list { padding: 8px 20px 14px; border-top: 1px solid rgba(0,0,0,0.05); }
 
         .net-row {
             display: flex;
@@ -360,7 +345,7 @@
 
         .recording-actions { display: flex; gap: 6px; }
 
-        .action-btn {
+        .rec-action-btn {
             width: 32px;
             height: 32px;
             border: none;
@@ -376,8 +361,8 @@
             transition: background 0.15s, transform 0.1s;
         }
 
-        .action-btn:hover { background: #e5e5ea; }
-        .action-btn:active { transform: scale(0.92); }
+        .rec-action-btn:hover { background: #e5e5ea; }
+        .rec-action-btn:active { transform: scale(0.92); }
 
         .state-msg {
             text-align: center;
@@ -391,7 +376,6 @@
         @media (max-width: 600px) {
             .container { padding: 20px 12px 40px; }
             .card { border-radius: 14px; }
-            .sys-grid { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
@@ -452,14 +436,25 @@
             </div>
         </div>
 
+        <!-- Recording control card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Recording</span>
+            </div>
+            <div class="card-body">
+                <button id="recordBtn" class="action-pill-btn" onclick="toggleRecording()">Start</button>
+                <span id="recordStatusLabel" class="status-label"></span>
+            </div>
+        </div>
+
         <!-- Christopher's Desktop card -->
         <div class="card">
             <div class="card-header">
                 <span class="card-title">Christopher's Desktop</span>
             </div>
             <div class="card-body">
-                <button id="wolBtn" onclick="wakePC()">Wake</button>
-                <span id="wolStatusLabel"></span>
+                <button id="wolBtn" class="action-pill-btn" onclick="wakePC()">Wake</button>
+                <span id="wolStatusLabel" class="status-label"></span>
             </div>
         </div>
 
@@ -490,18 +485,6 @@
                 </div>
             </div>
 
-            <!-- CPU + temp grid -->
-            <div class="sys-grid">
-                <div class="sys-item">
-                    <span class="sys-item-label">CPU</span>
-                    <span class="sys-item-value" id="cpuVal">—</span>
-                </div>
-                <div class="sys-item">
-                    <span class="sys-item-label">Temperature</span>
-                    <span class="sys-item-value" id="tempVal">—</span>
-                </div>
-            </div>
-
             <!-- Network interfaces -->
             <div class="net-list" id="netList">
                 <div class="net-row">
@@ -519,6 +502,7 @@
         let hlsInstance = null;
         let streamActive = false;
         let startAbortController = null;
+        let isRecording = false;
 
         /* ── Clock ── */
         function updateClock() {
@@ -672,6 +656,49 @@
             setStreamUI('off');
         }
 
+        /* ── Recording control ── */
+        function setRecordingUI(recording) {
+            isRecording = recording;
+            const btn   = document.getElementById('recordBtn');
+            btn.textContent = recording ? 'Stop' : 'Start';
+            btn.classList.toggle('is-recording', recording);
+        }
+
+        async function toggleRecording() {
+            const btn   = document.getElementById('recordBtn');
+            const label = document.getElementById('recordStatusLabel');
+
+            btn.disabled = true;
+            label.style.color = '#8e8e93';
+            label.textContent = isRecording ? 'Stopping\u2026' : 'Starting\u2026';
+
+            const endpoint = isRecording ? '/api/recording/stop' : '/api/recording/start';
+
+            try {
+                const res  = await fetch(endpoint, { method: 'POST' });
+                const data = await res.json();
+
+                if (data.status === 'started' || data.status === 'stopped') {
+                    setRecordingUI(data.status === 'started');
+                    label.style.color = '#34c759';
+                    label.textContent = data.status === 'started' ? '\u2714 Started' : '\u2714 Stopped';
+                    // Refresh recordings list after a short delay so new file appears
+                    if (data.status === 'stopped') {
+                        setTimeout(loadRecordings, 2000);
+                    }
+                } else {
+                    label.style.color = '#ff3b30';
+                    label.textContent = '\u26a0 ' + (data.message || 'Error');
+                }
+            } catch (e) {
+                label.style.color = '#ff3b30';
+                label.textContent = '\u26a0 Failed';
+            }
+
+            btn.disabled = false;
+            setTimeout(() => { label.textContent = ''; }, 4000);
+        }
+
         /* ── WOL ── */
         async function wakePC() {
             const btn   = document.getElementById('wolBtn');
@@ -718,8 +745,8 @@
                         <div class="recording-item">
                             <span class="recording-info">${recording.display_name}</span>
                             <div class="recording-actions">
-                                <a href="/api/play/${recording.filename}" target="_blank" class="action-btn" title="Play">&#9654;</a>
-                                <a href="/api/download/${recording.filename}" class="action-btn" title="Download">&#8595;</a>
+                                <a href="/api/play/${recording.filename}" target="_blank" class="rec-action-btn" title="Play">&#9654;</a>
+                                <a href="/api/download/${recording.filename}" class="rec-action-btn" title="Download">&#8595;</a>
                             </div>
                         </div>`;
                 }
@@ -744,13 +771,18 @@
 
                 const recDot  = document.getElementById('recordingDot');
                 const recText = document.getElementById('recordingText');
-                if (data.recording_status === 'active') {
+                const active  = data.recording_status === 'active';
+
+                if (active) {
                     recDot.className = 'dot recording';
                     recText.textContent = 'Recording';
                 } else {
                     recDot.className = 'dot off';
                     recText.textContent = 'Not Recording';
                 }
+
+                // Keep record button in sync with actual service state
+                setRecordingUI(active);
 
                 // Disk progress bar
                 if (data.disk_usage) {
@@ -767,12 +799,6 @@
                     bar.className = 'progress-fill' +
                         (pct >= 90 ? ' crit' : pct >= 75 ? ' warn' : '');
                 }
-
-                // CPU + temp
-                document.getElementById('cpuVal').textContent =
-                    data.cpu_percent != null ? data.cpu_percent.toFixed(1) + '%' : '—';
-                document.getElementById('tempVal').textContent =
-                    data.cpu_temp || '—';
 
                 // Network interfaces
                 const netList = document.getElementById('netList');

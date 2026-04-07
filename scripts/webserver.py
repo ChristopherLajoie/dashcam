@@ -159,6 +159,40 @@ def hls_files(filename):
     return send_from_directory(HLS_DIR, filename)
 
 
+# ── Recording control ──────────────────────────────────────────────────────────
+
+@app.route("/api/recording/start", methods=["POST"])
+def recording_start():
+    try:
+        result = subprocess.run(
+            ["systemctl", "start", "ipcamera-recorder"],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0:
+            return jsonify({"status": "started"})
+        else:
+            return jsonify({"status": "error", "message": result.stderr.strip()}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/recording/stop", methods=["POST"])
+def recording_stop():
+    try:
+        result = subprocess.run(
+            ["systemctl", "stop", "ipcamera-recorder"],
+            capture_output=True, text=True, timeout=15
+        )
+        if result.returncode == 0:
+            return jsonify({"status": "stopped"})
+        else:
+            return jsonify({"status": "error", "message": result.stderr.strip()}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# ──────────────────────────────────────────────────────────────────────────────
+
+
 @app.route("/api/wol", methods=["POST"])
 def wake_on_lan():
     try:
@@ -346,30 +380,10 @@ def get_status():
     except Exception:
         pass
 
-    # CPU & temperature
-    cpu_percent = None
-    cpu_temp    = None
-    try:
-        cpu_percent = psutil.cpu_percent(interval=0.5)
-    except Exception:
-        pass
-    try:
-        result = subprocess.run(
-            ["vcgencmd", "measure_temp"],
-            capture_output=True, text=True, timeout=3
-        )
-        # Output: "temp=42.8'C"
-        if result.returncode == 0:
-            cpu_temp = result.stdout.strip().replace("temp=", "").replace("'C", "°C")
-    except Exception:
-        pass
-
     return jsonify({
         "disk_usage":          disk_usage,
         "recording_status":    recording_status,
         "network_interfaces":  network_interfaces,
-        "cpu_percent":         cpu_percent,
-        "cpu_temp":            cpu_temp,
         "timestamp":           datetime.now().isoformat(),
     })
 
