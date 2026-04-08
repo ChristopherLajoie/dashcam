@@ -5,12 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Camera</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-font-smoothing: antialiased;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
@@ -19,76 +14,31 @@
             color: #1c1c1e;
         }
 
-        .container {
-            max-width: 780px;
-            margin: 0 auto;
-            padding: 32px 20px 48px;
-        }
+        .container { max-width: 780px; margin: 0 auto; padding: 32px 20px 48px; }
 
         /* ── Status bar ── */
-        .status-bar {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-bottom: 28px;
-            flex-wrap: wrap;
-        }
-
+        .status-bar { display: flex; gap: 8px; justify-content: center; margin-bottom: 28px; flex-wrap: wrap; }
         .pill {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            background: white;
-            border: 1px solid rgba(0,0,0,0.07);
-            padding: 7px 14px;
-            border-radius: 99px;
-            font-size: 13px;
-            font-weight: 500;
-            color: #3a3a3c;
-            letter-spacing: -0.01em;
+            display: flex; align-items: center; gap: 7px;
+            background: white; border: 1px solid rgba(0,0,0,0.07);
+            padding: 7px 14px; border-radius: 99px;
+            font-size: 13px; font-weight: 500; color: #3a3a3c; letter-spacing: -0.01em;
         }
-
-        .dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #34c759;
-            flex-shrink: 0;
-        }
+        .dot { width: 7px; height: 7px; border-radius: 50%; background: #34c759; flex-shrink: 0; }
         .dot.off { background: #ff3b30; }
-        .dot.recording {
-            background: #ff3b30;
-            animation: pulse 1.6s ease-in-out infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50%       { opacity: 0.45; transform: scale(0.8); }
-        }
+        .dot.recording { background: #ff3b30; animation: pulse 1.6s ease-in-out infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.45;transform:scale(.8)} }
 
         /* ── Cards ── */
-        .card {
-            background: white;
-            border-radius: 18px;
-            border: 1px solid rgba(0,0,0,0.06);
-            margin-bottom: 12px;
-            overflow: hidden;
-        }
+        .card { background: white; border-radius: 18px; border: 1px solid rgba(0,0,0,0.06); margin-bottom: 12px; overflow: hidden; }
         .card-header { padding: 16px 20px 0; }
-        .card-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: #8e8e93;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-        }
+        .card-title { font-size: 12px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.06em; }
 
         /* ── Live block ── */
         .live-block {
-            border-radius: 18px;
-            overflow: hidden;
+            border-radius: 18px; overflow: hidden;
             border: 1px solid rgba(0,0,0,0.06);
-            background: #111;
-            margin-bottom: 0;
+            background: #111; margin-bottom: 12px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.06);
         }
 
@@ -100,157 +50,63 @@
             background: #111;
         }
 
-        /* When the WRAPPER is fullscreened via our custom button */
+        /* Wrapper fullscreen — clock and overlays follow */
         .video-wrapper:fullscreen,
         .video-wrapper:-webkit-full-screen {
-            width: 100vw;
-            height: 100vh;
-            aspect-ratio: unset;
-            border-radius: 0;
+            width: 100vw; height: 100vh; aspect-ratio: unset; border-radius: 0;
         }
         .video-wrapper:fullscreen #liveVideo,
         .video-wrapper:-webkit-full-screen #liveVideo {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
+            width: 100%; height: 100%; object-fit: contain;
         }
 
-        #liveVideo {
-            width: 100%;
-            height: 100%;
-            display: block;
-            object-fit: cover;
-        }
+        #liveVideo { width: 100%; height: 100%; display: block; object-fit: cover; }
 
-        /* LIVE badge — top-left */
+        /* LIVE badge */
         .live-badge {
-            position: absolute;
-            top: 10px;
-            left: 12px;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: white;
-            background: rgba(0,0,0,0.45);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            padding: 3px 8px;
-            border-radius: 6px;
-            pointer-events: none;
-            z-index: 10;
+            position: absolute; top: 10px; left: 12px;
+            font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+            color: white; background: rgba(0,0,0,0.45);
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            padding: 3px 8px; border-radius: 6px; pointer-events: none; z-index: 10;
         }
 
-        /* Clock — top center, inside wrapper → follows wrapper fullscreen */
+        /* Clock — top-center, inside wrapper */
         .video-clock {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: white;
-            pointer-events: none;
-            z-index: 10;
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            color: white; pointer-events: none; z-index: 10;
             text-shadow: 0 1px 4px rgba(0,0,0,0.7);
         }
         .video-clock .clock-time {
-            font-size: 20px;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-            font-variant-numeric: tabular-nums;
-            white-space: nowrap;
+            font-size: 20px; font-weight: 600; letter-spacing: -0.02em;
+            font-variant-numeric: tabular-nums; white-space: nowrap;
         }
 
         /* Overlays */
         .video-overlay {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
             pointer-events: none;
         }
         .overlay-btn {
-            pointer-events: all;
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            background: rgba(0,0,0,0.45);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.18s, transform 0.12s;
-            color: white;
+            pointer-events: all; width: 64px; height: 64px; border-radius: 50%;
+            background: rgba(0,0,0,0.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+            border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: background 0.18s, transform 0.12s; color: white;
         }
-        .overlay-btn:hover { background: rgba(0,0,0,0.62); transform: scale(1.07); }
+        .overlay-btn:hover  { background: rgba(0,0,0,0.62); transform: scale(1.07); }
         .overlay-btn:active { transform: scale(0.95); }
-        .video-wrapper .video-overlay.live-overlay {
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
+        .video-wrapper .video-overlay.live-overlay { opacity: 0; transition: opacity 0.2s; }
         .video-wrapper:hover .video-overlay.live-overlay { opacity: 1; }
         #loadingOverlay { background: rgba(0,0,0,0.35); }
 
-        .spinner {
-            width: 28px; height: 28px;
-            border: 2.5px solid rgba(255,255,255,0.2);
-            border-top-color: rgba(255,255,255,0.85);
-            border-radius: 50%;
-            animation: spin 0.75s linear infinite;
-        }
+        .spinner { width: 28px; height: 28px; border: 2.5px solid rgba(255,255,255,0.2); border-top-color: rgba(255,255,255,0.85); border-radius: 50%; animation: spin 0.75s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
         .stop-icon { width: 16px; height: 16px; background: white; border-radius: 2px; }
-        .play-icon {
-            width: 0; height: 0; border-style: solid;
-            border-width: 11px 0 11px 20px;
-            border-color: transparent transparent transparent white;
-            margin-left: 4px;
-        }
-
-        /* ── Toolbar below video ── */
-        .video-toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding: 5px 8px;
-            background: #1a1a1a;
-            gap: 6px;
-        }
-        .toolbar-btn {
-            width: 30px; height: 30px;
-            border: none; border-radius: 7px;
-            background: rgba(255,255,255,0.08);
-            color: rgba(255,255,255,0.75);
-            cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            transition: background 0.15s, color 0.15s, transform 0.1s;
-        }
-        .toolbar-btn:hover  { background: rgba(255,255,255,0.16); color: white; }
-        .toolbar-btn:active { transform: scale(0.92); }
-        .toolbar-btn svg { width: 16px; height: 16px; display: block; }
-        .toolbar-label {
-            font-size: 11px;
-            color: rgba(255,255,255,0.4);
-            letter-spacing: 0.04em;
-            flex: 1;
-            padding-left: 4px;
-            font-weight: 500;
-            text-transform: uppercase;
-        }
+        .play-icon { width: 0; height: 0; border-style: solid; border-width: 11px 0 11px 20px; border-color: transparent transparent transparent white; margin-left: 4px; }
 
         /* ── Info row ── */
-        .info-row {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding: 0 4px;
-            margin-top: 6px;
-            margin-bottom: 6px;
-        }
+        .info-row { display: flex; align-items: center; justify-content: flex-end; padding: 0 4px; margin-top: 6px; margin-bottom: 6px; }
         .info-toggle-btn {
             display: inline-flex; align-items: center; gap: 5px;
             padding: 5px 12px; border-radius: 99px;
@@ -264,17 +120,9 @@
         .info-toggle-btn.active { background: #1c1c1e; color: white; border-color: #1c1c1e; }
 
         /* ── Stream info panel ── */
-        .stream-info-panel {
-            overflow: hidden; max-height: 0; opacity: 0;
-            transition: max-height 0.25s ease, opacity 0.2s ease, margin 0.25s ease;
-            margin-bottom: 0;
-        }
+        .stream-info-panel { overflow: hidden; max-height: 0; opacity: 0; transition: max-height .25s ease, opacity .2s ease, margin .25s ease; margin-bottom: 0; }
         .stream-info-panel.visible { max-height: 80px; opacity: 1; margin-bottom: 12px; }
-        .stream-info-inner {
-            background: white; border-radius: 14px;
-            border: 1px solid rgba(0,0,0,0.06);
-            padding: 10px 16px; display: flex; gap: 24px;
-        }
+        .stream-info-inner { background: white; border-radius: 14px; border: 1px solid rgba(0,0,0,0.06); padding: 10px 16px; display: flex; gap: 24px; }
         .stream-info-item { display: flex; flex-direction: column; gap: 1px; }
         .stream-info-label { font-size: 10px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.06em; }
         .stream-info-value { font-size: 13px; font-weight: 500; color: #1c1c1e; font-variant-numeric: tabular-nums; font-family: "SF Mono","Fira Mono",monospace; }
@@ -292,10 +140,8 @@
         }
         .action-pill-btn:active   { transform: scale(0.96); }
         .action-pill-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
-
         #wolBtn    { border: 1.5px solid #6e6cff; background: transparent; color: #6e6cff; }
         #wolBtn:hover:not(:disabled) { background: #6e6cff; color: white; }
-
         #recordBtn { border: 1.5px solid #ff3b30; background: transparent; color: #ff3b30; }
         #recordBtn:hover:not(:disabled) { background: #ff3b30; color: white; }
         #recordBtn.is-recording { border-color: #8e8e93; color: #8e8e93; }
@@ -337,7 +183,7 @@
         .state-msg.error { color: #ff3b30; }
 
         /* ── Skeleton ── */
-        @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+        @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
         .skeleton-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 12px; }
         .skeleton-bar { height: 14px; border-radius: 6px; background: linear-gradient(90deg,#e5e5ea 25%,#f2f2f7 50%,#e5e5ea 75%); background-size: 400px 100%; animation: shimmer 1.4s ease-in-out infinite; }
         .skeleton-name { width: 55%; }
@@ -352,379 +198,338 @@
     </style>
 </head>
 <body>
-    <div class="container">
+<div class="container">
 
-        <!-- Status pills -->
-        <div class="status-bar">
-            <div class="pill">
-                <div class="dot" id="connectionDot"></div>
-                <span id="connectionText">Connected</span>
-            </div>
-            <div class="pill">
-                <div class="dot" id="recordingDot"></div>
-                <span id="recordingText">Recording</span>
-            </div>
-        </div>
-
-        <!-- Live block -->
-        <div class="live-block" style="margin-bottom:12px;">
-            <div class="video-wrapper" id="videoWrapper">
-                <!-- controls restored; native fullscreen will fullscreen only the video,
-                     use the toolbar button below to fullscreen the whole wrapper with clock -->
-                <video id="liveVideo" autoplay muted playsinline controls></video>
-
-                <!-- LIVE badge -->
-                <div class="live-badge">Live</div>
-
-                <!-- Clock — top-center, inside wrapper → follows wrapper fullscreen -->
-                <div class="video-clock">
-                    <div class="clock-time" id="clockTime">--:--:--</div>
-                </div>
-
-                <!-- Idle overlay -->
-                <div class="video-overlay" id="idleOverlay">
-                    <button class="overlay-btn" onclick="startStream()">
-                        <div class="play-icon"></div>
-                    </button>
-                </div>
-
-                <!-- Loading overlay -->
-                <div class="video-overlay" id="loadingOverlay" style="display:none;">
-                    <div class="spinner"></div>
-                </div>
-
-                <!-- Live overlay (hover to stop) -->
-                <div class="video-overlay live-overlay" id="liveOverlay" style="display:none;">
-                    <button class="overlay-btn" onclick="stopStream()">
-                        <div class="stop-icon"></div>
-                    </button>
-                </div>
-
-                <!-- Error overlay -->
-                <div class="video-overlay" id="errorOverlay" style="display:none; background:rgba(0,0,0,0.5);">
-                    <button class="overlay-btn" onclick="startStream()">
-                        <div class="play-icon"></div>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Toolbar: fullscreen wrapper button (keeps clock) -->
-            <div class="video-toolbar">
-                <span class="toolbar-label">Fullscreen includes clock</span>
-                <button class="toolbar-btn" id="fullscreenBtn" onclick="toggleFullscreen()" title="Fullscreen with clock">
-                    <svg id="fsIconExpand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
-                        <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
-                    </svg>
-                    <svg id="fsIconCompress" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
-                        <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
-                        <line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-
-        <!-- Info toggle -->
-        <div class="info-row">
-            <button class="info-toggle-btn" id="infoToggleBtn" onclick="toggleStreamInfo()">
-                <span>i</span> Stream info
-            </button>
-        </div>
-
-        <!-- Stream info panel -->
-        <div class="stream-info-panel" id="streamInfoPanel">
-            <div class="stream-info-inner">
-                <div class="stream-info-item">
-                    <span class="stream-info-label">FPS</span>
-                    <span class="stream-info-value" id="infoFps">—</span>
-                </div>
-                <div class="stream-info-item">
-                    <span class="stream-info-label">Resolution</span>
-                    <span class="stream-info-value" id="infoResolution">—</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Recording card -->
-        <div class="card" id="recordingsCard">
-            <div class="card-header">
-                <span class="card-title">Recording</span>
-            </div>
-            <div class="card-body">
-                <button id="recordBtn" class="action-pill-btn" onclick="toggleRecording()">Start</button>
-                <span id="recordStatusLabel" class="status-label"></span>
-            </div>
-            <div class="card-divider"></div>
-            <div id="recordingsContainer" class="recordings-list">
-                <div id="recordingsSkeleton">
-                    <div class="skeleton-row"><div class="skeleton-bar skeleton-name"></div><div class="skeleton-btns"><div class="skeleton-btn"></div><div class="skeleton-btn"></div><div class="skeleton-btn"></div></div></div>
-                    <div class="skeleton-row"><div class="skeleton-bar skeleton-name" style="width:45%"></div><div class="skeleton-btns"><div class="skeleton-btn"></div><div class="skeleton-btn"></div><div class="skeleton-btn"></div></div></div>
-                    <div class="skeleton-row"><div class="skeleton-bar skeleton-name" style="width:60%"></div><div class="skeleton-btns"><div class="skeleton-btn"></div><div class="skeleton-btn"></div><div class="skeleton-btn"></div></div></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Christopher's Desktop -->
-        <div class="card">
-            <div class="card-header">
-                <span class="card-title">Christopher's Desktop</span>
-            </div>
-            <div class="card-body">
-                <button id="wolBtn" class="action-pill-btn" onclick="wakePC()">Wake</button>
-                <span id="wolStatusLabel" class="status-label"></span>
-            </div>
-        </div>
-
-        <!-- System -->
-        <div class="card">
-            <div class="card-header" style="padding-bottom:14px;">
-                <span class="card-title">System</span>
-            </div>
-            <div class="disk-section">
-                <div class="disk-header">
-                    <span class="disk-label">Storage</span>
-                    <span class="disk-values" id="diskValues">— GB used · — GB free</span>
-                </div>
-                <div class="progress-track">
-                    <div class="progress-fill" id="diskBar"></div>
-                </div>
-            </div>
-            <div class="net-list" id="netList">
-                <div class="net-row">
-                    <span class="net-iface">—</span>
-                    <span class="net-ip">Loading…</span>
-                </div>
-            </div>
-        </div>
-
+    <!-- Status pills -->
+    <div class="status-bar">
+        <div class="pill"><div class="dot" id="connectionDot"></div><span id="connectionText">Connected</span></div>
+        <div class="pill"><div class="dot" id="recordingDot"></div><span id="recordingText">Recording</span></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script>
-        let isLoading = false;
-        let hlsInstance = null;
-        let streamActive = false;
-        let startAbortController = null;
-        let isRecording = false;
-        let recordingsLoaded = false;
-        let streamInfoVisible = false;
+    <!-- Live block — single clean player, clock baked in -->
+    <div class="live-block">
+        <div class="video-wrapper" id="videoWrapper">
+            <!-- controls on; fullscreen is intercepted in JS to fullscreen the wrapper instead -->
+            <video id="liveVideo" autoplay muted playsinline controls></video>
 
-        /* ── Clock ── */
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('clockTime').textContent =
-                String(now.getHours()).padStart(2,'0')+':'+
-                String(now.getMinutes()).padStart(2,'0')+':'+
-                String(now.getSeconds()).padStart(2,'0');
+            <!-- LIVE badge -->
+            <div class="live-badge">Live</div>
+
+            <!-- Clock — floats top-center, travels with wrapper into fullscreen -->
+            <div class="video-clock"><div class="clock-time" id="clockTime">--:--:--</div></div>
+
+            <!-- Idle overlay -->
+            <div class="video-overlay" id="idleOverlay">
+                <button class="overlay-btn" onclick="startStream()"><div class="play-icon"></div></button>
+            </div>
+            <!-- Loading overlay -->
+            <div class="video-overlay" id="loadingOverlay" style="display:none;">
+                <div class="spinner"></div>
+            </div>
+            <!-- Live overlay (hover to stop) -->
+            <div class="video-overlay live-overlay" id="liveOverlay" style="display:none;">
+                <button class="overlay-btn" onclick="stopStream()"><div class="stop-icon"></div></button>
+            </div>
+            <!-- Error overlay -->
+            <div class="video-overlay" id="errorOverlay" style="display:none;background:rgba(0,0,0,0.5);">
+                <button class="overlay-btn" onclick="startStream()"><div class="play-icon"></div></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info toggle -->
+    <div class="info-row">
+        <button class="info-toggle-btn" id="infoToggleBtn" onclick="toggleStreamInfo()">
+            <span>i</span> Stream info
+        </button>
+    </div>
+
+    <!-- Stream info panel -->
+    <div class="stream-info-panel" id="streamInfoPanel">
+        <div class="stream-info-inner">
+            <div class="stream-info-item">
+                <span class="stream-info-label">FPS</span>
+                <span class="stream-info-value" id="infoFps">—</span>
+            </div>
+            <div class="stream-info-item">
+                <span class="stream-info-label">Resolution</span>
+                <span class="stream-info-value" id="infoResolution">—</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recording card -->
+    <div class="card" id="recordingsCard">
+        <div class="card-header"><span class="card-title">Recording</span></div>
+        <div class="card-body">
+            <button id="recordBtn" class="action-pill-btn" onclick="toggleRecording()">Start</button>
+            <span id="recordStatusLabel" class="status-label"></span>
+        </div>
+        <div class="card-divider"></div>
+        <div id="recordingsContainer" class="recordings-list">
+            <div id="recordingsSkeleton">
+                <div class="skeleton-row"><div class="skeleton-bar skeleton-name"></div><div class="skeleton-btns"><div class="skeleton-btn"></div><div class="skeleton-btn"></div><div class="skeleton-btn"></div></div></div>
+                <div class="skeleton-row"><div class="skeleton-bar skeleton-name" style="width:45%"></div><div class="skeleton-btns"><div class="skeleton-btn"></div><div class="skeleton-btn"></div><div class="skeleton-btn"></div></div></div>
+                <div class="skeleton-row"><div class="skeleton-bar skeleton-name" style="width:60%"></div><div class="skeleton-btns"><div class="skeleton-btn"></div><div class="skeleton-btn"></div><div class="skeleton-btn"></div></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Christopher's Desktop -->
+    <div class="card">
+        <div class="card-header"><span class="card-title">Christopher's Desktop</span></div>
+        <div class="card-body">
+            <button id="wolBtn" class="action-pill-btn" onclick="wakePC()">Wake</button>
+            <span id="wolStatusLabel" class="status-label"></span>
+        </div>
+    </div>
+
+    <!-- System -->
+    <div class="card">
+        <div class="card-header" style="padding-bottom:14px;"><span class="card-title">System</span></div>
+        <div class="disk-section">
+            <div class="disk-header">
+                <span class="disk-label">Storage</span>
+                <span class="disk-values" id="diskValues">— GB used · — GB free</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill" id="diskBar"></div></div>
+        </div>
+        <div class="net-list" id="netList">
+            <div class="net-row"><span class="net-iface">—</span><span class="net-ip">Loading…</span></div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script>
+    let isLoading = false, hlsInstance = null, streamActive = false;
+    let startAbortController = null, isRecording = false;
+    let recordingsLoaded = false, streamInfoVisible = false;
+
+    /* ── Clock ── */
+    function updateClock() {
+        const n = new Date();
+        document.getElementById('clockTime').textContent =
+            String(n.getHours()).padStart(2,'0')+':'+
+            String(n.getMinutes()).padStart(2,'0')+':'+
+            String(n.getSeconds()).padStart(2,'0');
+    }
+    setInterval(updateClock, 1000); updateClock();
+
+    /* ── Intercept native fullscreen button → fullscreen the wrapper instead ──
+       The video fires a "fullscreenchange" when the browser control bar's
+       fullscreen button is clicked. We cancel it and re-request on the wrapper
+       so the clock overlay travels along.                                       */
+    const video   = document.getElementById('liveVideo');
+    const wrapper = document.getElementById('videoWrapper');
+
+    video.addEventListener('webkitendfullscreen', () => {});   // Safari hook (no-op needed)
+
+    // Before the video enters fullscreen, exit it and re-enter on the wrapper
+    video.addEventListener('fullscreenchange', () => {
+        if (document.fullscreenElement === video) {
+            document.exitFullscreen().then(() => {
+                wrapper.requestFullscreen && wrapper.requestFullscreen();
+            });
         }
-        setInterval(updateClock, 1000);
-        updateClock();
+    });
+    video.addEventListener('webkitfullscreenchange', () => {
+        if (document.webkitFullscreenElement === video) {
+            document.webkitExitFullscreen();
+            // Safari: slight delay needed before re-requesting
+            setTimeout(() => {
+                (wrapper.webkitRequestFullscreen || wrapper.requestFullscreen) &&
+                (wrapper.webkitRequestFullscreen || wrapper.requestFullscreen).call(wrapper);
+            }, 80);
+        }
+    });
 
-        /* ── Custom fullscreen (fullscreens the wrapper so clock follows) ── */
-        function toggleFullscreen() {
-            const wrapper = document.getElementById('videoWrapper');
-            const inFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
-            if (!inFS) {
-                (wrapper.requestFullscreen || wrapper.webkitRequestFullscreen).call(wrapper);
-            } else {
-                (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    /* ── Stream info ── */
+    function toggleStreamInfo() {
+        streamInfoVisible = !streamInfoVisible;
+        document.getElementById('streamInfoPanel').classList.toggle('visible', streamInfoVisible);
+        document.getElementById('infoToggleBtn').classList.toggle('active', streamInfoVisible);
+        if (streamInfoVisible && streamActive) fetchStreamInfo();
+    }
+    async function fetchStreamInfo() {
+        try {
+            const d = await (await fetch('/api/stream/info')).json();
+            document.getElementById('infoFps').textContent        = d.fps        || '—';
+            document.getElementById('infoResolution').textContent = d.resolution || '—';
+        } catch(e) {}
+    }
+
+    /* ── Overlays ── */
+    function showOverlay(name) {
+        document.getElementById('idleOverlay').style.display    = name==='idle'    ? 'flex' : 'none';
+        document.getElementById('loadingOverlay').style.display = name==='loading' ? 'flex' : 'none';
+        document.getElementById('liveOverlay').style.display    = name==='live'    ? 'flex' : 'none';
+        document.getElementById('errorOverlay').style.display   = name==='error'   ? 'flex' : 'none';
+    }
+    function setStreamUI(state) {
+        if      (state==='off')      { streamActive=false; showOverlay('idle');    document.getElementById('infoFps').textContent='—'; document.getElementById('infoResolution').textContent='—'; }
+        else if (state==='starting') showOverlay('loading');
+        else if (state==='on')       { streamActive=true;  showOverlay('live');    if(streamInfoVisible) fetchStreamInfo(); }
+        else if (state==='stopping') showOverlay('live');
+        else if (state==='error')    { streamActive=false; showOverlay('error'); }
+    }
+
+    async function waitForStreamReady(signal, ms=20000) {
+        const end = Date.now()+ms;
+        while (Date.now()<end) {
+            if (signal.aborted) return false;
+            try { const d=await (await fetch('/api/stream/status',{signal})).json(); if(d.ready) return true; }
+            catch(e) { if(e.name==='AbortError') return false; }
+            await new Promise(r=>setTimeout(r,500));
+        }
+        return false;
+    }
+
+    async function startStream() {
+        setStreamUI('starting');
+        if (startAbortController) startAbortController.abort();
+        startAbortController = new AbortController();
+        const {signal} = startAbortController;
+        try { await fetch('/api/stream/start',{method:'POST',signal}); }
+        catch(e) { if(e.name!=='AbortError') setStreamUI('error'); return; }
+        const ready = await waitForStreamReady(signal);
+        if (!ready) { if(!signal.aborted) setStreamUI('error'); return; }
+        if (signal.aborted) return;
+        if (Hls.isSupported()) {
+            if (hlsInstance) hlsInstance.destroy();
+            hlsInstance = new Hls({liveSyncDurationCount:2,liveMaxLatencyDurationCount:5,maxBufferLength:4,maxMaxBufferLength:8,lowLatencyMode:false,startPosition:-1});
+            hlsInstance.loadSource('/api/stream/hls/stream.m3u8');
+            hlsInstance.attachMedia(video);
+            hlsInstance.on(Hls.Events.MANIFEST_PARSED,()=>{ video.play(); setStreamUI('on'); });
+            hlsInstance.on(Hls.Events.ERROR,(_,d)=>{ if(d.fatal){ setStreamUI('error'); if(hlsInstance){hlsInstance.destroy();hlsInstance=null;} } });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src='/api/stream/hls/stream.m3u8?t='+Date.now(); video.play(); setStreamUI('on');
+        } else setStreamUI('error');
+    }
+
+    async function stopStream() {
+        if (startAbortController) { startAbortController.abort(); startAbortController=null; }
+        setStreamUI('stopping');
+        if (hlsInstance) { hlsInstance.destroy(); hlsInstance=null; }
+        video.pause();
+        try { await fetch('/api/stream/stop',{method:'POST'}); } catch(e) {}
+        setStreamUI('off');
+    }
+
+    /* ── Recording ── */
+    function setRecordingUI(r) {
+        isRecording=r;
+        const btn=document.getElementById('recordBtn');
+        btn.textContent=r?'Stop':'Start';
+        btn.classList.toggle('is-recording',r);
+    }
+    async function toggleRecording() {
+        const btn=document.getElementById('recordBtn'), lbl=document.getElementById('recordStatusLabel');
+        btn.disabled=true; lbl.style.color='#8e8e93'; lbl.textContent=isRecording?'Stopping…':'Starting…';
+        try {
+            const d=await (await fetch(isRecording?'/api/recording/stop':'/api/recording/start',{method:'POST'})).json();
+            if (d.status==='started'||d.status==='stopped') {
+                setRecordingUI(d.status==='started');
+                lbl.style.color='#34c759'; lbl.textContent=d.status==='started'?'\u2714 Started':'\u2714 Stopped';
+                if (d.status==='stopped') setTimeout(loadRecordings,2000);
+            } else { lbl.style.color='#ff3b30'; lbl.textContent='\u26a0 '+(d.message||'Error'); }
+        } catch(e) { lbl.style.color='#ff3b30'; lbl.textContent='\u26a0 Failed'; }
+        btn.disabled=false;
+        setTimeout(()=>{lbl.textContent='';},4000);
+    }
+
+    /* ── WOL ── */
+    async function wakePC() {
+        const btn=document.getElementById('wolBtn'), lbl=document.getElementById('wolStatusLabel');
+        btn.disabled=true; lbl.style.color='#8e8e93'; lbl.textContent='Sending…';
+        try {
+            const d=await (await fetch('/api/wol',{method:'POST'})).json();
+            lbl.style.color=d.status==='sent'?'#34c759':'#ff3b30';
+            lbl.textContent=d.status==='sent'?'\u2714 Sent':'\u26a0 '+d.message;
+        } catch(e) { lbl.style.color='#ff3b30'; lbl.textContent='\u26a0 Failed'; }
+        setTimeout(()=>{btn.disabled=false;lbl.textContent='';},5000);
+    }
+
+    /* ── Delete ── */
+    async function deleteRecording(filename, rowEl) {
+        if (!confirm(`Delete ${filename}?`)) return;
+        rowEl.classList.add('deleting');
+        try {
+            const d=await (await fetch(`/api/delete/${encodeURIComponent(filename)}`,{method:'DELETE'})).json();
+            if (d.status==='deleted') {
+                rowEl.style.transition='opacity .25s,max-height .3s,padding .3s';
+                rowEl.style.maxHeight=rowEl.offsetHeight+'px';
+                requestAnimationFrame(()=>{ rowEl.style.opacity='0'; rowEl.style.maxHeight='0'; rowEl.style.padding='0'; rowEl.style.overflow='hidden'; });
+                setTimeout(()=>rowEl.remove(),350);
+            } else { rowEl.classList.remove('deleting'); alert('Delete failed: '+(d.message||'Unknown')); }
+        } catch(e) { rowEl.classList.remove('deleting'); alert('Delete failed: '+e.message); }
+    }
+
+    /* ── Recordings ── */
+    async function loadRecordings() {
+        if (isLoading) return; isLoading=true;
+        const c=document.getElementById('recordingsContainer');
+        try {
+            const res=await fetch('/api/recordings');
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const recs=await res.json();
+            if (!recs||recs.length===0) { c.innerHTML='<div class="state-msg">No recordings yet</div>'; return; }
+            c.innerHTML=recs.map(r=>`
+                <div class="recording-item" data-filename="${r.filename}">
+                    <span class="recording-info">${r.display_name}</span>
+                    <div class="recording-actions">
+                        <a href="/api/play/${r.filename}" target="_blank" class="rec-action-btn" title="Play">&#9654;</a>
+                        <a href="/api/download/${r.filename}" class="rec-action-btn" title="Download">&#8595;</a>
+                        <button class="rec-action-btn delete-btn" title="Delete" onclick="deleteRecording('${r.filename}',this.closest('.recording-item'))">&#128465;</button>
+                    </div>
+                </div>`).join('');
+            recordingsLoaded=true;
+        } catch(e) { c.innerHTML=`<div class="state-msg error">Error: ${e.message}</div>`; }
+        finally { isLoading=false; }
+    }
+
+    /* ── Status ── */
+    async function updateStatus() {
+        try {
+            const d=await (await fetch('/api/status')).json();
+            document.getElementById('connectionDot').className='dot';
+            document.getElementById('connectionText').textContent='Connected';
+            const active=d.recording_status==='active';
+            document.getElementById('recordingDot').className=active?'dot recording':'dot off';
+            document.getElementById('recordingText').textContent=active?'Recording':'Not Recording';
+            setRecordingUI(active);
+            if (d.disk_usage) {
+                const {percent:p,used,free,total}=d.disk_usage;
+                document.getElementById('diskValues').textContent=`${(used/1e9).toFixed(1)} GB used \u00b7 ${(free/1e9).toFixed(1)} GB free of ${(total/1e9).toFixed(1)} GB`;
+                const bar=document.getElementById('diskBar');
+                bar.style.width=Math.round(p)+'%';
+                bar.className='progress-fill'+(p>=90?' crit':p>=75?' warn':'');
             }
-        }
-        function onFullscreenChange() {
-            const inFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
-            document.getElementById('fsIconExpand').style.display   = inFS ? 'none'  : 'block';
-            document.getElementById('fsIconCompress').style.display = inFS ? 'block' : 'none';
-        }
-        document.addEventListener('fullscreenchange',       onFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+            const nl=document.getElementById('netList');
+            nl.innerHTML=(d.network_interfaces&&d.network_interfaces.length)
+                ?d.network_interfaces.map(n=>`<div class="net-row"><span class="net-iface">${n.interface}</span><span class="net-ip">${n.ip}</span></div>`).join('')
+                :'<div class="net-row"><span class="net-iface">\u2014</span><span class="net-ip">No interfaces</span></div>';
+        } catch { document.getElementById('connectionDot').className='dot off'; document.getElementById('connectionText').textContent='Disconnected'; }
+    }
 
-        /* ── Stream info ── */
-        function toggleStreamInfo() {
-            streamInfoVisible = !streamInfoVisible;
-            document.getElementById('streamInfoPanel').classList.toggle('visible', streamInfoVisible);
-            document.getElementById('infoToggleBtn').classList.toggle('active', streamInfoVisible);
-            if (streamInfoVisible && streamActive) fetchStreamInfo();
-        }
-        async function fetchStreamInfo() {
-            try {
-                const data = await (await fetch('/api/stream/info')).json();
-                document.getElementById('infoFps').textContent        = data.fps        || '—';
-                document.getElementById('infoResolution').textContent = data.resolution || '—';
-            } catch(e) {}
-        }
+    /* ── Lazy-load recordings ── */
+    function setupRecordingsLazyLoad() {
+        const card=document.getElementById('recordingsCard');
+        if (!('IntersectionObserver' in window)) { loadRecordings(); return; }
+        const obs=new IntersectionObserver(entries=>{
+            entries.forEach(e=>{ if(e.isIntersecting&&!recordingsLoaded){ loadRecordings(); if(recordingsLoaded) obs.disconnect(); } });
+        },{rootMargin:'200px'});
+        obs.observe(card);
+    }
 
-        /* ── Overlays ── */
-        function showOverlay(name) {
-            document.getElementById('idleOverlay').style.display    = name==='idle'    ? 'flex' : 'none';
-            document.getElementById('loadingOverlay').style.display = name==='loading' ? 'flex' : 'none';
-            document.getElementById('liveOverlay').style.display    = name==='live'    ? 'flex' : 'none';
-            document.getElementById('errorOverlay').style.display   = name==='error'   ? 'flex' : 'none';
-        }
-        function setStreamUI(state) {
-            if (state==='off')      { streamActive=false; showOverlay('idle');    document.getElementById('infoFps').textContent='—'; document.getElementById('infoResolution').textContent='—'; }
-            else if (state==='starting') showOverlay('loading');
-            else if (state==='on')  { streamActive=true;  showOverlay('live');    if(streamInfoVisible) fetchStreamInfo(); }
-            else if (state==='stopping') showOverlay('live');
-            else if (state==='error')    { streamActive=false; showOverlay('error'); }
-        }
-
-        async function waitForStreamReady(signal, timeoutMs=20000) {
-            const deadline = Date.now()+timeoutMs;
-            while (Date.now()<deadline) {
-                if (signal.aborted) return false;
-                try { const d=await (await fetch('/api/stream/status',{signal})).json(); if(d.ready) return true; }
-                catch(e) { if(e.name==='AbortError') return false; }
-                await new Promise(r=>setTimeout(r,500));
-            }
-            return false;
-        }
-
-        async function startStream() {
-            setStreamUI('starting');
-            if (startAbortController) startAbortController.abort();
-            startAbortController = new AbortController();
-            const {signal} = startAbortController;
-            try { await fetch('/api/stream/start',{method:'POST',signal}); }
-            catch(e) { if(e.name!=='AbortError') setStreamUI('error'); return; }
-            const ready = await waitForStreamReady(signal);
-            if (!ready) { if(!signal.aborted) setStreamUI('error'); return; }
-            if (signal.aborted) return;
-            const video = document.getElementById('liveVideo');
-            if (Hls.isSupported()) {
-                if (hlsInstance) hlsInstance.destroy();
-                hlsInstance = new Hls({liveSyncDurationCount:2,liveMaxLatencyDurationCount:5,maxBufferLength:4,maxMaxBufferLength:8,lowLatencyMode:false,startPosition:-1});
-                hlsInstance.loadSource('/api/stream/hls/stream.m3u8');
-                hlsInstance.attachMedia(video);
-                hlsInstance.on(Hls.Events.MANIFEST_PARSED,()=>{ video.play(); setStreamUI('on'); });
-                hlsInstance.on(Hls.Events.ERROR,(_,d)=>{ if(d.fatal){ setStreamUI('error'); if(hlsInstance){hlsInstance.destroy();hlsInstance=null;} } });
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src='/api/stream/hls/stream.m3u8?t='+Date.now(); video.play(); setStreamUI('on');
-            } else setStreamUI('error');
-        }
-
-        async function stopStream() {
-            if (startAbortController) { startAbortController.abort(); startAbortController=null; }
-            setStreamUI('stopping');
-            if (hlsInstance) { hlsInstance.destroy(); hlsInstance=null; }
-            document.getElementById('liveVideo').pause();
-            try { await fetch('/api/stream/stop',{method:'POST'}); } catch(e) {}
-            setStreamUI('off');
-        }
-
-        /* ── Recording ── */
-        function setRecordingUI(recording) {
-            isRecording=recording;
-            const btn=document.getElementById('recordBtn');
-            btn.textContent=recording?'Stop':'Start';
-            btn.classList.toggle('is-recording',recording);
-        }
-        async function toggleRecording() {
-            const btn=document.getElementById('recordBtn'), label=document.getElementById('recordStatusLabel');
-            btn.disabled=true; label.style.color='#8e8e93'; label.textContent=isRecording?'Stopping…':'Starting…';
-            try {
-                const data=await (await fetch(isRecording?'/api/recording/stop':'/api/recording/start',{method:'POST'})).json();
-                if (data.status==='started'||data.status==='stopped') {
-                    setRecordingUI(data.status==='started');
-                    label.style.color='#34c759';
-                    label.textContent=data.status==='started'?'\u2714 Started':'\u2714 Stopped';
-                    if (data.status==='stopped') setTimeout(loadRecordings,2000);
-                } else { label.style.color='#ff3b30'; label.textContent='\u26a0 '+(data.message||'Error'); }
-            } catch(e) { label.style.color='#ff3b30'; label.textContent='\u26a0 Failed'; }
-            btn.disabled=false;
-            setTimeout(()=>{label.textContent='';},4000);
-        }
-
-        /* ── WOL ── */
-        async function wakePC() {
-            const btn=document.getElementById('wolBtn'), label=document.getElementById('wolStatusLabel');
-            btn.disabled=true; label.style.color='#8e8e93'; label.textContent='Sending…';
-            try {
-                const data=await (await fetch('/api/wol',{method:'POST'})).json();
-                label.style.color=data.status==='sent'?'#34c759':'#ff3b30';
-                label.textContent=data.status==='sent'?'\u2714 Sent':'\u26a0 '+data.message;
-            } catch(e) { label.style.color='#ff3b30'; label.textContent='\u26a0 Failed'; }
-            setTimeout(()=>{btn.disabled=false;label.textContent='';},5000);
-        }
-
-        /* ── Delete ── */
-        async function deleteRecording(filename,rowEl) {
-            if (!confirm(`Delete ${filename}?`)) return;
-            rowEl.classList.add('deleting');
-            try {
-                const data=await (await fetch(`/api/delete/${encodeURIComponent(filename)}`,{method:'DELETE'})).json();
-                if (data.status==='deleted') {
-                    rowEl.style.transition='opacity .25s,max-height .3s,padding .3s';
-                    rowEl.style.maxHeight=rowEl.offsetHeight+'px';
-                    requestAnimationFrame(()=>{ rowEl.style.opacity='0'; rowEl.style.maxHeight='0'; rowEl.style.padding='0'; rowEl.style.overflow='hidden'; });
-                    setTimeout(()=>rowEl.remove(),350);
-                } else { rowEl.classList.remove('deleting'); alert('Delete failed: '+(data.message||'Unknown')); }
-            } catch(e) { rowEl.classList.remove('deleting'); alert('Delete failed: '+e.message); }
-        }
-
-        /* ── Recordings ── */
-        async function loadRecordings() {
-            if (isLoading) return; isLoading=true;
-            const container=document.getElementById('recordingsContainer');
-            try {
-                const response=await fetch('/api/recordings');
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const recordings=await response.json();
-                if (!recordings||recordings.length===0) { container.innerHTML='<div class="state-msg">No recordings yet</div>'; return; }
-                container.innerHTML=recordings.map(r=>`
-                    <div class="recording-item" data-filename="${r.filename}">
-                        <span class="recording-info">${r.display_name}</span>
-                        <div class="recording-actions">
-                            <a href="/api/play/${r.filename}" target="_blank" class="rec-action-btn" title="Play">&#9654;</a>
-                            <a href="/api/download/${r.filename}" class="rec-action-btn" title="Download">&#8595;</a>
-                            <button class="rec-action-btn delete-btn" title="Delete" onclick="deleteRecording('${r.filename}',this.closest('.recording-item'))">&#128465;</button>
-                        </div>
-                    </div>`).join('');
-                recordingsLoaded=true;
-            } catch(error) { container.innerHTML=`<div class="state-msg error">Error: ${error.message}</div>`; }
-            finally { isLoading=false; }
-        }
-
-        /* ── Status ── */
-        async function updateStatus() {
-            try {
-                const data=await (await fetch('/api/status')).json();
-                document.getElementById('connectionDot').className='dot';
-                document.getElementById('connectionText').textContent='Connected';
-                const active=data.recording_status==='active';
-                document.getElementById('recordingDot').className=active?'dot recording':'dot off';
-                document.getElementById('recordingText').textContent=active?'Recording':'Not Recording';
-                setRecordingUI(active);
-                if (data.disk_usage) {
-                    const {percent:pct,used,free,total}=data.disk_usage;
-                    document.getElementById('diskValues').textContent=`${(used/1e9).toFixed(1)} GB used \u00b7 ${(free/1e9).toFixed(1)} GB free of ${(total/1e9).toFixed(1)} GB`;
-                    const bar=document.getElementById('diskBar');
-                    bar.style.width=Math.round(pct)+'%';
-                    bar.className='progress-fill'+(pct>=90?' crit':pct>=75?' warn':'');
-                }
-                const netList=document.getElementById('netList');
-                netList.innerHTML=(data.network_interfaces&&data.network_interfaces.length)
-                    ?data.network_interfaces.map(n=>`<div class="net-row"><span class="net-iface">${n.interface}</span><span class="net-ip">${n.ip}</span></div>`).join('')
-                    :'<div class="net-row"><span class="net-iface">\u2014</span><span class="net-ip">No interfaces</span></div>';
-            } catch { document.getElementById('connectionDot').className='dot off'; document.getElementById('connectionText').textContent='Disconnected'; }
-        }
-
-        /* ── Lazy-load ── */
-        function setupRecordingsLazyLoad() {
-            const card=document.getElementById('recordingsCard');
-            if (!('IntersectionObserver' in window)) { loadRecordings(); return; }
-            const obs=new IntersectionObserver(entries=>{
-                entries.forEach(e=>{ if(e.isIntersecting&&!recordingsLoaded){ loadRecordings(); if(recordingsLoaded) obs.disconnect(); } });
-            },{rootMargin:'200px'});
-            obs.observe(card);
-        }
-
-        showOverlay('idle');
-        window.addEventListener('load',()=>{
-            updateStatus();
-            setupRecordingsLazyLoad();
-            setInterval(updateStatus,30000);
-            setInterval(()=>{ if(recordingsLoaded) loadRecordings(); },300000);
-        });
-    </script>
+    showOverlay('idle');
+    window.addEventListener('load',()=>{
+        updateStatus();
+        setupRecordingsLazyLoad();
+        setInterval(updateStatus,30000);
+        setInterval(()=>{ if(recordingsLoaded) loadRecordings(); },300000);
+    });
+</script>
 </body>
 </html>
