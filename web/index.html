@@ -89,6 +89,86 @@
             letter-spacing: 0.06em;
         }
 
+        /* ── Stream info bar (above video, toggled by button) ── */
+        .stream-info-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 14px 9px 16px;
+            background: #f9f9fb;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            overflow: hidden;
+            max-height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            opacity: 0;
+            transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+        }
+
+        .stream-info-bar.visible {
+            max-height: 48px;
+            padding-top: 9px;
+            padding-bottom: 9px;
+            opacity: 1;
+        }
+
+        .stream-info-items {
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .stream-info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .stream-info-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #8e8e93;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .stream-info-value {
+            font-size: 13px;
+            font-weight: 500;
+            color: #1c1c1e;
+            font-variant-numeric: tabular-nums;
+            font-family: "SF Mono", "Fira Mono", monospace;
+        }
+
+        /* Info toggle button — sits in top-right corner of the live card header */
+        .live-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px 0 16px;
+        }
+
+        .info-toggle-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 8px;
+            background: #f2f2f7;
+            color: #8e8e93;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, color 0.15s, transform 0.1s;
+            letter-spacing: -0.02em;
+        }
+
+        .info-toggle-btn:hover { background: #e5e5ea; color: #3a3a3c; }
+        .info-toggle-btn:active { transform: scale(0.92); }
+        .info-toggle-btn.active { background: #1c1c1e; color: white; }
+
         /* ── Video ── */
         .video-wrapper {
             position: relative;
@@ -104,16 +184,16 @@
             object-fit: cover;
         }
 
-        /* Clock + date overlay — top left */
+        /* Clock — top center of video */
         .video-clock {
             position: absolute;
             top: 12px;
-            left: 14px;
+            left: 50%;
+            transform: translateX(-50%);
             color: white;
             pointer-events: none;
             z-index: 10;
             text-shadow: 0 1px 4px rgba(0,0,0,0.7);
-            line-height: 1.2;
         }
 
         .video-clock .clock-time {
@@ -121,36 +201,8 @@
             font-weight: 600;
             letter-spacing: -0.02em;
             font-variant-numeric: tabular-nums;
+            white-space: nowrap;
         }
-
-        .video-clock .clock-date {
-            font-size: 11px;
-            font-weight: 400;
-            opacity: 0.85;
-            letter-spacing: 0.01em;
-        }
-
-        /* FPS + resolution badge — top right */
-        .video-badge {
-            position: absolute;
-            top: 12px;
-            right: 14px;
-            background: rgba(0,0,0,0.45);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            color: white;
-            font-size: 11px;
-            font-weight: 500;
-            padding: 4px 9px;
-            border-radius: 99px;
-            pointer-events: none;
-            z-index: 10;
-            letter-spacing: 0.01em;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .video-badge.visible { opacity: 1; }
 
         /* Overlays */
         .video-overlay {
@@ -218,7 +270,7 @@
             margin-left: 4px;
         }
 
-        /* ── Card body (WOL + Recording share layout) ── */
+        /* ── Card body ── */
         .card-body {
             padding: 12px 20px 18px;
             display: flex;
@@ -244,7 +296,6 @@
         .action-pill-btn:active { transform: scale(0.96); }
         .action-pill-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 
-        /* WOL — indigo */
         #wolBtn {
             border: 1.5px solid #6e6cff;
             background: transparent;
@@ -252,7 +303,6 @@
         }
         #wolBtn:hover:not(:disabled) { background: #6e6cff; color: white; }
 
-        /* Record — red when idle, gray when active */
         #recordBtn {
             border: 1.5px solid #ff3b30;
             background: transparent;
@@ -267,7 +317,7 @@
 
         .status-label { font-size: 13px; color: #8e8e93; }
 
-        /* ── Divider between record controls and list ── */
+        /* ── Divider ── */
         .card-divider {
             height: 1px;
             background: rgba(0,0,0,0.05);
@@ -285,7 +335,6 @@
         }
 
         .disk-label { font-size: 13px; color: #3a3a3c; font-weight: 500; }
-
         .disk-values { font-size: 12px; color: #8e8e93; }
 
         .progress-track {
@@ -347,9 +396,7 @@
         }
 
         .recording-item:hover { background: #f2f2f7; }
-
         .recording-info { font-size: 14px; color: #3a3a3c; letter-spacing: -0.01em; }
-
         .recording-actions { display: flex; gap: 6px; }
 
         .rec-action-btn {
@@ -371,13 +418,8 @@
         .rec-action-btn:hover { background: #e5e5ea; }
         .rec-action-btn:active { transform: scale(0.92); }
 
-        /* Delete button — red tint on hover */
-        .rec-action-btn.delete-btn:hover {
-            background: #ff3b30;
-            color: white;
-        }
+        .rec-action-btn.delete-btn:hover { background: #ff3b30; color: white; }
 
-        /* Deleting state — fade out the row */
         .recording-item.deleting {
             opacity: 0.35;
             pointer-events: none;
@@ -393,7 +435,7 @@
 
         .state-msg.error { color: #ff3b30; }
 
-        /* ── Recordings skeleton ── */
+        /* ── Skeleton ── */
         @keyframes shimmer {
             0%   { background-position: -400px 0; }
             100% { background-position:  400px 0; }
@@ -444,17 +486,34 @@
 
         <!-- Live view card -->
         <div class="card">
+            <!-- Card header with info toggle button -->
+            <div class="live-card-header">
+                <span class="card-title">Live</span>
+                <button class="info-toggle-btn" id="infoToggleBtn" title="Stream info" onclick="toggleStreamInfo()">i</button>
+            </div>
+
+            <!-- Stream info bar (hidden until toggled) -->
+            <div class="stream-info-bar" id="streamInfoBar">
+                <div class="stream-info-items">
+                    <div class="stream-info-item">
+                        <span class="stream-info-label">FPS</span>
+                        <span class="stream-info-value" id="infoFps">—</span>
+                    </div>
+                    <div class="stream-info-item">
+                        <span class="stream-info-label">Resolution</span>
+                        <span class="stream-info-value" id="infoResolution">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video -->
             <div class="video-wrapper" id="videoWrapper">
                 <video id="liveVideo" autoplay muted playsinline controls></video>
 
-                <!-- Clock overlay -->
-                <div class="video-clock" id="videoClock">
+                <!-- Clock — top center -->
+                <div class="video-clock">
                     <div class="clock-time" id="clockTime">--:--:--</div>
-                    <div class="clock-date" id="clockDate">---</div>
                 </div>
-
-                <!-- FPS / resolution badge -->
-                <div class="video-badge" id="videoBadge">-- fps · ----</div>
 
                 <!-- Idle overlay -->
                 <div class="video-overlay" id="idleOverlay">
@@ -489,16 +548,12 @@
             <div class="card-header">
                 <span class="card-title">Recording</span>
             </div>
-            <!-- Record button row -->
             <div class="card-body">
                 <button id="recordBtn" class="action-pill-btn" onclick="toggleRecording()">Start</button>
                 <span id="recordStatusLabel" class="status-label"></span>
             </div>
-            <!-- Divider -->
             <div class="card-divider"></div>
-            <!-- Lazy-loaded recordings list -->
             <div id="recordingsContainer" class="recordings-list">
-                <!-- Skeleton shown until IntersectionObserver fires -->
                 <div id="recordingsSkeleton">
                     <div class="skeleton-row"><div class="skeleton-bar skeleton-name"></div><div class="skeleton-btns"><div class="skeleton-btn"></div><div class="skeleton-btn"></div><div class="skeleton-btn"></div></div></div>
                     <div class="skeleton-row"><div class="skeleton-bar skeleton-name" style="width:45%"></div><div class="skeleton-btns"><div class="skeleton-btn"></div><div class="skeleton-btn"></div><div class="skeleton-btn"></div></div></div>
@@ -523,8 +578,6 @@
             <div class="card-header" style="padding-bottom: 14px;">
                 <span class="card-title">System</span>
             </div>
-
-            <!-- Disk progress -->
             <div class="disk-section">
                 <div class="disk-header">
                     <span class="disk-label">Storage</span>
@@ -534,8 +587,6 @@
                     <div class="progress-fill" id="diskBar"></div>
                 </div>
             </div>
-
-            <!-- Network interfaces -->
             <div class="net-list" id="netList">
                 <div class="net-row">
                     <span class="net-iface">—</span>
@@ -554,6 +605,7 @@
         let startAbortController = null;
         let isRecording = false;
         let recordingsLoaded = false;
+        let streamInfoVisible = false;
 
         /* ── Clock ── */
         function updateClock() {
@@ -562,26 +614,27 @@
             const mm  = String(now.getMinutes()).padStart(2, '0');
             const ss  = String(now.getSeconds()).padStart(2, '0');
             document.getElementById('clockTime').textContent = `${hh}:${mm}:${ss}`;
-
-            const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            document.getElementById('clockDate').textContent =
-                `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()} ${now.getFullYear()}`;
         }
 
         setInterval(updateClock, 1000);
         updateClock();
 
-        /* ── Stream info badge ── */
+        /* ── Stream info toggle ── */
+        function toggleStreamInfo() {
+            streamInfoVisible = !streamInfoVisible;
+            const bar = document.getElementById('streamInfoBar');
+            const btn = document.getElementById('infoToggleBtn');
+            bar.classList.toggle('visible', streamInfoVisible);
+            btn.classList.toggle('active', streamInfoVisible);
+            if (streamInfoVisible && streamActive) fetchStreamInfo();
+        }
+
         async function fetchStreamInfo() {
             try {
                 const res  = await fetch('/api/stream/info');
                 const data = await res.json();
-                if (data.fps && data.resolution) {
-                    document.getElementById('videoBadge').textContent =
-                        `${data.fps} fps \u00b7 ${data.resolution}`;
-                    document.getElementById('videoBadge').classList.add('visible');
-                }
+                document.getElementById('infoFps').textContent        = data.fps        || '—';
+                document.getElementById('infoResolution').textContent = data.resolution || '—';
             } catch (e) { /* silent */ }
         }
 
@@ -597,19 +650,19 @@
             if (state === 'off') {
                 streamActive = false;
                 showOverlay('idle');
-                document.getElementById('videoBadge').classList.remove('visible');
+                document.getElementById('infoFps').textContent        = '—';
+                document.getElementById('infoResolution').textContent = '—';
             } else if (state === 'starting') {
                 showOverlay('loading');
             } else if (state === 'on') {
                 streamActive = true;
                 showOverlay('live');
-                fetchStreamInfo();
+                if (streamInfoVisible) fetchStreamInfo();
             } else if (state === 'stopping') {
                 showOverlay('live');
             } else if (state === 'error') {
                 streamActive = false;
                 showOverlay('error');
-                document.getElementById('videoBadge').classList.remove('visible');
             }
         }
 
@@ -721,7 +774,7 @@
 
             btn.disabled = true;
             label.style.color = '#8e8e93';
-            label.textContent = isRecording ? 'Stopping\u2026' : 'Starting\u2026';
+            label.textContent = isRecording ? 'Stopping…' : 'Starting…';
 
             const endpoint = isRecording ? '/api/recording/stop' : '/api/recording/start';
 
@@ -756,7 +809,7 @@
 
             btn.disabled = true;
             label.style.color = '#8e8e93';
-            label.textContent = 'Sending\u2026';
+            label.textContent = 'Sending…';
 
             try {
                 const res  = await fetch('/api/wol', { method: 'POST' });
