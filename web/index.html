@@ -82,14 +82,13 @@
             letter-spacing: 0.06em;
         }
 
-        /* ── Live block (standalone, no card header) ── */
+        /* ── Live block ── */
         .live-block {
             border-radius: 18px;
             overflow: hidden;
             border: 1px solid rgba(0,0,0,0.06);
             background: #111;
             margin-bottom: 0;
-            /* shadow so it lifts like the other cards */
             box-shadow: 0 1px 3px rgba(0,0,0,0.06);
         }
 
@@ -101,7 +100,7 @@
             background: #111;
         }
 
-        /* Fullscreen: make wrapper fill screen */
+        /* When the WRAPPER is fullscreened via our custom button */
         .video-wrapper:fullscreen,
         .video-wrapper:-webkit-full-screen {
             width: 100vw;
@@ -123,7 +122,7 @@
             object-fit: cover;
         }
 
-        /* LIVE badge — top-left of video */
+        /* LIVE badge — top-left */
         .live-badge {
             position: absolute;
             top: 10px;
@@ -142,7 +141,7 @@
             z-index: 10;
         }
 
-        /* Clock — top center, inside wrapper → follows fullscreen */
+        /* Clock — top center, inside wrapper → follows wrapper fullscreen */
         .video-clock {
             position: absolute;
             top: 10px;
@@ -196,8 +195,7 @@
         #loadingOverlay { background: rgba(0,0,0,0.35); }
 
         .spinner {
-            width: 28px;
-            height: 28px;
+            width: 28px; height: 28px;
             border: 2.5px solid rgba(255,255,255,0.2);
             border-top-color: rgba(255,255,255,0.85);
             border-radius: 50%;
@@ -207,42 +205,42 @@
 
         .stop-icon { width: 16px; height: 16px; background: white; border-radius: 2px; }
         .play-icon {
-            width: 0; height: 0;
-            border-style: solid;
+            width: 0; height: 0; border-style: solid;
             border-width: 11px 0 11px 20px;
             border-color: transparent transparent transparent white;
             margin-left: 4px;
         }
 
-        /* ── Video toolbar (below video, inside live-block) ── */
+        /* ── Toolbar below video ── */
         .video-toolbar {
             display: flex;
             align-items: center;
             justify-content: flex-end;
-            padding: 6px 10px;
+            padding: 5px 8px;
             background: #1a1a1a;
             gap: 6px;
         }
-
         .toolbar-btn {
-            width: 30px;
-            height: 30px;
-            border: none;
-            border-radius: 7px;
+            width: 30px; height: 30px;
+            border: none; border-radius: 7px;
             background: rgba(255,255,255,0.08);
             color: rgba(255,255,255,0.75);
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             transition: background 0.15s, color 0.15s, transform 0.1s;
-            flex-shrink: 0;
         }
-        .toolbar-btn:hover { background: rgba(255,255,255,0.16); color: white; }
+        .toolbar-btn:hover  { background: rgba(255,255,255,0.16); color: white; }
         .toolbar-btn:active { transform: scale(0.92); }
-
-        /* SVG icons inside toolbar buttons */
         .toolbar-btn svg { width: 16px; height: 16px; display: block; }
+        .toolbar-label {
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 0.04em;
+            flex: 1;
+            padding-left: 4px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
 
         /* ── Info row ── */
         .info-row {
@@ -254,79 +252,45 @@
             margin-bottom: 6px;
         }
         .info-toggle-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 5px 12px;
-            border-radius: 99px;
-            background: white;
-            border: 1px solid rgba(0,0,0,0.07);
-            color: #8e8e93;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            letter-spacing: -0.01em;
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 12px; border-radius: 99px;
+            background: white; border: 1px solid rgba(0,0,0,0.07);
+            color: #8e8e93; font-size: 12px; font-weight: 600;
+            cursor: pointer; letter-spacing: -0.01em;
             transition: background 0.15s, color 0.15s, transform 0.1s;
         }
-        .info-toggle-btn:hover { background: #e5e5ea; color: #3a3a3c; }
+        .info-toggle-btn:hover  { background: #e5e5ea; color: #3a3a3c; }
         .info-toggle-btn:active { transform: scale(0.94); }
         .info-toggle-btn.active { background: #1c1c1e; color: white; border-color: #1c1c1e; }
 
         /* ── Stream info panel ── */
         .stream-info-panel {
-            overflow: hidden;
-            max-height: 0;
-            opacity: 0;
+            overflow: hidden; max-height: 0; opacity: 0;
             transition: max-height 0.25s ease, opacity 0.2s ease, margin 0.25s ease;
             margin-bottom: 0;
         }
-        .stream-info-panel.visible {
-            max-height: 80px;
-            opacity: 1;
-            margin-bottom: 12px;
-        }
+        .stream-info-panel.visible { max-height: 80px; opacity: 1; margin-bottom: 12px; }
         .stream-info-inner {
-            background: white;
-            border-radius: 14px;
+            background: white; border-radius: 14px;
             border: 1px solid rgba(0,0,0,0.06);
-            padding: 10px 16px;
-            display: flex;
-            gap: 24px;
+            padding: 10px 16px; display: flex; gap: 24px;
         }
         .stream-info-item { display: flex; flex-direction: column; gap: 1px; }
-        .stream-info-label {
-            font-size: 10px; font-weight: 600; color: #8e8e93;
-            text-transform: uppercase; letter-spacing: 0.06em;
-        }
-        .stream-info-value {
-            font-size: 13px; font-weight: 500; color: #1c1c1e;
-            font-variant-numeric: tabular-nums;
-            font-family: "SF Mono", "Fira Mono", monospace;
-        }
+        .stream-info-label { font-size: 10px; font-weight: 600; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.06em; }
+        .stream-info-value { font-size: 13px; font-weight: 500; color: #1c1c1e; font-variant-numeric: tabular-nums; font-family: "SF Mono","Fira Mono",monospace; }
 
         /* ── Card body ── */
-        .card-body {
-            padding: 12px 20px 18px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        .card-body { padding: 12px 20px 18px; display: flex; align-items: center; gap: 12px; }
 
         /* ── Action pill button ── */
         .action-pill-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            padding: 8px 18px;
-            border-radius: 99px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            letter-spacing: -0.01em;
-            white-space: nowrap;
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 8px 18px; border-radius: 99px;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            letter-spacing: -0.01em; white-space: nowrap;
             transition: background 0.18s, color 0.18s, opacity 0.18s, transform 0.1s;
         }
-        .action-pill-btn:active { transform: scale(0.96); }
+        .action-pill-btn:active   { transform: scale(0.96); }
         .action-pill-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 
         #wolBtn    { border: 1.5px solid #6e6cff; background: transparent; color: #6e6cff; }
@@ -338,77 +302,51 @@
         #recordBtn.is-recording:hover:not(:disabled) { background: #8e8e93; color: white; }
 
         .status-label { font-size: 13px; color: #8e8e93; }
-
         .card-divider { height: 1px; background: rgba(0,0,0,0.05); margin: 0 20px; }
 
         /* ── Disk ── */
         .disk-section { padding: 14px 20px 18px; }
         .disk-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-        .disk-label { font-size: 13px; color: #3a3a3c; font-weight: 500; }
+        .disk-label  { font-size: 13px; color: #3a3a3c; font-weight: 500; }
         .disk-values { font-size: 12px; color: #8e8e93; }
         .progress-track { width: 100%; height: 6px; background: #f2f2f7; border-radius: 99px; overflow: hidden; }
-        .progress-fill {
-            height: 100%; border-radius: 99px; background: #34c759;
-            transition: width 0.5s ease, background 0.3s; width: 0%;
-        }
+        .progress-fill  { height: 100%; border-radius: 99px; background: #34c759; transition: width .5s ease, background .3s; width: 0%; }
         .progress-fill.warn { background: #ff9f0a; }
         .progress-fill.crit { background: #ff3b30; }
 
         /* ── Network ── */
         .net-list { padding: 8px 20px 14px; border-top: 1px solid rgba(0,0,0,0.05); }
-        .net-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 7px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 13px;
-        }
+        .net-row  { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 13px; }
         .net-row:last-child { border-bottom: none; }
         .net-iface { font-weight: 600; color: #3a3a3c; font-family: "SF Mono","Fira Mono",monospace; font-size: 12px; }
         .net-ip    { color: #8e8e93; font-family: "SF Mono","Fira Mono",monospace; font-size: 12px; }
 
         /* ── Recordings ── */
         .recordings-list { padding: 4px 8px 8px; }
-        .recording-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 11px 12px; border-radius: 10px; transition: background 0.15s;
-        }
+        .recording-item  { display: flex; justify-content: space-between; align-items: center; padding: 11px 12px; border-radius: 10px; transition: background .15s; }
         .recording-item:hover { background: #f2f2f7; }
-        .recording-info { font-size: 14px; color: #3a3a3c; letter-spacing: -0.01em; }
+        .recording-info  { font-size: 14px; color: #3a3a3c; letter-spacing: -0.01em; }
         .recording-actions { display: flex; gap: 6px; }
-        .rec-action-btn {
-            width: 32px; height: 32px; border: none; border-radius: 8px; cursor: pointer;
-            text-decoration: none; display: flex; align-items: center; justify-content: center;
-            font-size: 14px; background: #f2f2f7; color: #1c1c1e;
-            transition: background 0.15s, transform 0.1s;
-        }
-        .rec-action-btn:hover { background: #e5e5ea; }
+        .rec-action-btn  { width: 32px; height: 32px; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 14px; background: #f2f2f7; color: #1c1c1e; transition: background .15s, transform .1s; }
+        .rec-action-btn:hover  { background: #e5e5ea; }
         .rec-action-btn:active { transform: scale(0.92); }
         .rec-action-btn.delete-btn:hover { background: #ff3b30; color: white; }
-        .recording-item.deleting { opacity: 0.35; pointer-events: none; transition: opacity 0.25s; }
+        .recording-item.deleting { opacity: 0.35; pointer-events: none; transition: opacity .25s; }
 
-        .state-msg { text-align: center; font-size: 13px; color: #8e8e93; padding: 24px 20px; }
+        .state-msg       { text-align: center; font-size: 13px; color: #8e8e93; padding: 24px 20px; }
         .state-msg.error { color: #ff3b30; }
 
         /* ── Skeleton ── */
-        @keyframes shimmer {
-            0%   { background-position: -400px 0; }
-            100% { background-position:  400px 0; }
-        }
+        @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
         .skeleton-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 12px; }
-        .skeleton-bar {
-            height: 14px; border-radius: 6px;
-            background: linear-gradient(90deg, #e5e5ea 25%, #f2f2f7 50%, #e5e5ea 75%);
-            background-size: 400px 100%; animation: shimmer 1.4s ease-in-out infinite;
-        }
+        .skeleton-bar { height: 14px; border-radius: 6px; background: linear-gradient(90deg,#e5e5ea 25%,#f2f2f7 50%,#e5e5ea 75%); background-size: 400px 100%; animation: shimmer 1.4s ease-in-out infinite; }
         .skeleton-name { width: 55%; }
         .skeleton-btns { display: flex; gap: 6px; }
-        .skeleton-btn {
-            width: 32px; height: 32px; border-radius: 8px;
-            background: linear-gradient(90deg, #e5e5ea 25%, #f2f2f7 50%, #e5e5ea 75%);
-            background-size: 400px 100%; animation: shimmer 1.4s ease-in-out infinite;
-        }
+        .skeleton-btn  { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(90deg,#e5e5ea 25%,#f2f2f7 50%,#e5e5ea 75%); background-size: 400px 100%; animation: shimmer 1.4s ease-in-out infinite; }
 
         @media (max-width: 600px) {
-            .container { padding: 20px 12px 40px; }
-            .card { border-radius: 14px; }
+            .container  { padding: 20px 12px 40px; }
+            .card       { border-radius: 14px; }
             .live-block { border-radius: 14px; }
         }
     </style>
@@ -428,15 +366,17 @@
             </div>
         </div>
 
-        <!-- Live block — no card header, video flush to top ── -->
+        <!-- Live block -->
         <div class="live-block" style="margin-bottom:12px;">
             <div class="video-wrapper" id="videoWrapper">
-                <video id="liveVideo" autoplay muted playsinline></video>
+                <!-- controls restored; native fullscreen will fullscreen only the video,
+                     use the toolbar button below to fullscreen the whole wrapper with clock -->
+                <video id="liveVideo" autoplay muted playsinline controls></video>
 
-                <!-- LIVE badge top-left -->
+                <!-- LIVE badge -->
                 <div class="live-badge">Live</div>
 
-                <!-- Clock top-center — inside wrapper, follows fullscreen -->
+                <!-- Clock — top-center, inside wrapper → follows wrapper fullscreen -->
                 <div class="video-clock">
                     <div class="clock-time" id="clockTime">--:--:--</div>
                 </div>
@@ -468,22 +408,17 @@
                 </div>
             </div>
 
-            <!-- Thin dark toolbar with fullscreen button -->
+            <!-- Toolbar: fullscreen wrapper button (keeps clock) -->
             <div class="video-toolbar">
-                <button class="toolbar-btn" id="fullscreenBtn" onclick="toggleFullscreen()" title="Fullscreen">
-                    <!-- expand icon -->
+                <span class="toolbar-label">Fullscreen includes clock</span>
+                <button class="toolbar-btn" id="fullscreenBtn" onclick="toggleFullscreen()" title="Fullscreen with clock">
                     <svg id="fsIconExpand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 3 21 3 21 9"/>
-                        <polyline points="9 21 3 21 3 15"/>
-                        <line x1="21" y1="3" x2="14" y2="10"/>
-                        <line x1="3" y1="21" x2="10" y2="14"/>
+                        <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                        <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
                     </svg>
-                    <!-- compress icon (shown when fullscreen) -->
                     <svg id="fsIconCompress" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
-                        <polyline points="4 14 10 14 10 20"/>
-                        <polyline points="20 10 14 10 14 4"/>
-                        <line x1="10" y1="14" x2="3" y2="21"/>
-                        <line x1="21" y1="3" x2="14" y2="10"/>
+                        <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
+                        <line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/>
                     </svg>
                 </button>
             </div>
@@ -529,7 +464,7 @@
             </div>
         </div>
 
-        <!-- Christopher's Desktop card -->
+        <!-- Christopher's Desktop -->
         <div class="card">
             <div class="card-header">
                 <span class="card-title">Christopher's Desktop</span>
@@ -540,9 +475,9 @@
             </div>
         </div>
 
-        <!-- System card -->
+        <!-- System -->
         <div class="card">
-            <div class="card-header" style="padding-bottom: 14px;">
+            <div class="card-header" style="padding-bottom:14px;">
                 <span class="card-title">System</span>
             </div>
             <div class="disk-section">
@@ -578,23 +513,23 @@
         function updateClock() {
             const now = new Date();
             document.getElementById('clockTime').textContent =
-                String(now.getHours()).padStart(2,'0') + ':' +
-                String(now.getMinutes()).padStart(2,'0') + ':' +
+                String(now.getHours()).padStart(2,'0')+':'+
+                String(now.getMinutes()).padStart(2,'0')+':'+
                 String(now.getSeconds()).padStart(2,'0');
         }
         setInterval(updateClock, 1000);
         updateClock();
 
-        /* ── Fullscreen (wrapper, not video — so overlays follow) ── */
+        /* ── Custom fullscreen (fullscreens the wrapper so clock follows) ── */
         function toggleFullscreen() {
             const wrapper = document.getElementById('videoWrapper');
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            const inFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            if (!inFS) {
                 (wrapper.requestFullscreen || wrapper.webkitRequestFullscreen).call(wrapper);
             } else {
                 (document.exitFullscreen || document.webkitExitFullscreen).call(document);
             }
         }
-
         function onFullscreenChange() {
             const inFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
             document.getElementById('fsIconExpand').style.display   = inFS ? 'none'  : 'block';
@@ -615,7 +550,7 @@
                 const data = await (await fetch('/api/stream/info')).json();
                 document.getElementById('infoFps').textContent        = data.fps        || '—';
                 document.getElementById('infoResolution').textContent = data.resolution || '—';
-            } catch (e) {}
+            } catch(e) {}
         }
 
         /* ── Overlays ── */
@@ -625,33 +560,21 @@
             document.getElementById('liveOverlay').style.display    = name==='live'    ? 'flex' : 'none';
             document.getElementById('errorOverlay').style.display   = name==='error'   ? 'flex' : 'none';
         }
-
         function setStreamUI(state) {
-            if (state === 'off') {
-                streamActive = false; showOverlay('idle');
-                document.getElementById('infoFps').textContent        = '—';
-                document.getElementById('infoResolution').textContent = '—';
-            } else if (state === 'starting') {
-                showOverlay('loading');
-            } else if (state === 'on') {
-                streamActive = true; showOverlay('live');
-                if (streamInfoVisible) fetchStreamInfo();
-            } else if (state === 'stopping') {
-                showOverlay('live');
-            } else if (state === 'error') {
-                streamActive = false; showOverlay('error');
-            }
+            if (state==='off')      { streamActive=false; showOverlay('idle');    document.getElementById('infoFps').textContent='—'; document.getElementById('infoResolution').textContent='—'; }
+            else if (state==='starting') showOverlay('loading');
+            else if (state==='on')  { streamActive=true;  showOverlay('live');    if(streamInfoVisible) fetchStreamInfo(); }
+            else if (state==='stopping') showOverlay('live');
+            else if (state==='error')    { streamActive=false; showOverlay('error'); }
         }
 
         async function waitForStreamReady(signal, timeoutMs=20000) {
-            const deadline = Date.now() + timeoutMs;
-            while (Date.now() < deadline) {
+            const deadline = Date.now()+timeoutMs;
+            while (Date.now()<deadline) {
                 if (signal.aborted) return false;
-                try {
-                    const data = await (await fetch('/api/stream/status', {signal})).json();
-                    if (data.ready) return true;
-                } catch(e) { if (e.name==='AbortError') return false; }
-                await new Promise(r => setTimeout(r, 500));
+                try { const d=await (await fetch('/api/stream/status',{signal})).json(); if(d.ready) return true; }
+                catch(e) { if(e.name==='AbortError') return false; }
+                await new Promise(r=>setTimeout(r,500));
             }
             return false;
         }
@@ -661,34 +584,22 @@
             if (startAbortController) startAbortController.abort();
             startAbortController = new AbortController();
             const {signal} = startAbortController;
-            try {
-                await fetch('/api/stream/start', {method:'POST', signal});
-            } catch(e) {
-                if (e.name !== 'AbortError') setStreamUI('error');
-                return;
-            }
+            try { await fetch('/api/stream/start',{method:'POST',signal}); }
+            catch(e) { if(e.name!=='AbortError') setStreamUI('error'); return; }
             const ready = await waitForStreamReady(signal);
-            if (!ready) { if (!signal.aborted) setStreamUI('error'); return; }
+            if (!ready) { if(!signal.aborted) setStreamUI('error'); return; }
             if (signal.aborted) return;
-
             const video = document.getElementById('liveVideo');
             if (Hls.isSupported()) {
                 if (hlsInstance) hlsInstance.destroy();
-                hlsInstance = new Hls({
-                    liveSyncDurationCount: 2, liveMaxLatencyDurationCount: 5,
-                    maxBufferLength: 4, maxMaxBufferLength: 8,
-                    lowLatencyMode: false, startPosition: -1,
-                });
+                hlsInstance = new Hls({liveSyncDurationCount:2,liveMaxLatencyDurationCount:5,maxBufferLength:4,maxMaxBufferLength:8,lowLatencyMode:false,startPosition:-1});
                 hlsInstance.loadSource('/api/stream/hls/stream.m3u8');
                 hlsInstance.attachMedia(video);
-                hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => { video.play(); setStreamUI('on'); });
-                hlsInstance.on(Hls.Events.ERROR, (ev, data) => {
-                    if (data.fatal) { setStreamUI('error'); if (hlsInstance) { hlsInstance.destroy(); hlsInstance=null; } }
-                });
+                hlsInstance.on(Hls.Events.MANIFEST_PARSED,()=>{ video.play(); setStreamUI('on'); });
+                hlsInstance.on(Hls.Events.ERROR,(_,d)=>{ if(d.fatal){ setStreamUI('error'); if(hlsInstance){hlsInstance.destroy();hlsInstance=null;} } });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = '/api/stream/hls/stream.m3u8?t=' + Date.now();
-                video.play(); setStreamUI('on');
-            } else { setStreamUI('error'); }
+                video.src='/api/stream/hls/stream.m3u8?t='+Date.now(); video.play(); setStreamUI('on');
+            } else setStreamUI('error');
         }
 
         async function stopStream() {
@@ -696,84 +607,70 @@
             setStreamUI('stopping');
             if (hlsInstance) { hlsInstance.destroy(); hlsInstance=null; }
             document.getElementById('liveVideo').pause();
-            try { await fetch('/api/stream/stop', {method:'POST'}); } catch(e) {}
+            try { await fetch('/api/stream/stop',{method:'POST'}); } catch(e) {}
             setStreamUI('off');
         }
 
         /* ── Recording ── */
         function setRecordingUI(recording) {
-            isRecording = recording;
-            const btn = document.getElementById('recordBtn');
-            btn.textContent = recording ? 'Stop' : 'Start';
-            btn.classList.toggle('is-recording', recording);
+            isRecording=recording;
+            const btn=document.getElementById('recordBtn');
+            btn.textContent=recording?'Stop':'Start';
+            btn.classList.toggle('is-recording',recording);
         }
         async function toggleRecording() {
-            const btn   = document.getElementById('recordBtn');
-            const label = document.getElementById('recordStatusLabel');
-            btn.disabled = true;
-            label.style.color = '#8e8e93';
-            label.textContent = isRecording ? 'Stopping…' : 'Starting…';
+            const btn=document.getElementById('recordBtn'), label=document.getElementById('recordStatusLabel');
+            btn.disabled=true; label.style.color='#8e8e93'; label.textContent=isRecording?'Stopping…':'Starting…';
             try {
-                const data = await (await fetch(isRecording?'/api/recording/stop':'/api/recording/start', {method:'POST'})).json();
+                const data=await (await fetch(isRecording?'/api/recording/stop':'/api/recording/start',{method:'POST'})).json();
                 if (data.status==='started'||data.status==='stopped') {
                     setRecordingUI(data.status==='started');
-                    label.style.color = '#34c759';
-                    label.textContent = data.status==='started' ? '\u2714 Started' : '\u2714 Stopped';
-                    if (data.status==='stopped') setTimeout(loadRecordings, 2000);
-                } else {
-                    label.style.color='#ff3b30';
-                    label.textContent='\u26a0 '+(data.message||'Error');
-                }
+                    label.style.color='#34c759';
+                    label.textContent=data.status==='started'?'\u2714 Started':'\u2714 Stopped';
+                    if (data.status==='stopped') setTimeout(loadRecordings,2000);
+                } else { label.style.color='#ff3b30'; label.textContent='\u26a0 '+(data.message||'Error'); }
             } catch(e) { label.style.color='#ff3b30'; label.textContent='\u26a0 Failed'; }
-            btn.disabled = false;
-            setTimeout(()=>{ label.textContent=''; }, 4000);
+            btn.disabled=false;
+            setTimeout(()=>{label.textContent='';},4000);
         }
 
         /* ── WOL ── */
         async function wakePC() {
-            const btn   = document.getElementById('wolBtn');
-            const label = document.getElementById('wolStatusLabel');
-            btn.disabled = true; label.style.color='#8e8e93'; label.textContent='Sending…';
+            const btn=document.getElementById('wolBtn'), label=document.getElementById('wolStatusLabel');
+            btn.disabled=true; label.style.color='#8e8e93'; label.textContent='Sending…';
             try {
-                const data = await (await fetch('/api/wol',{method:'POST'})).json();
-                label.style.color = data.status==='sent' ? '#34c759' : '#ff3b30';
-                label.textContent = data.status==='sent' ? '\u2714 Sent' : '\u26a0 '+data.message;
+                const data=await (await fetch('/api/wol',{method:'POST'})).json();
+                label.style.color=data.status==='sent'?'#34c759':'#ff3b30';
+                label.textContent=data.status==='sent'?'\u2714 Sent':'\u26a0 '+data.message;
             } catch(e) { label.style.color='#ff3b30'; label.textContent='\u26a0 Failed'; }
-            setTimeout(()=>{ btn.disabled=false; label.textContent=''; }, 5000);
+            setTimeout(()=>{btn.disabled=false;label.textContent='';},5000);
         }
 
         /* ── Delete ── */
-        async function deleteRecording(filename, rowEl) {
+        async function deleteRecording(filename,rowEl) {
             if (!confirm(`Delete ${filename}?`)) return;
             rowEl.classList.add('deleting');
             try {
-                const data = await (await fetch(`/api/delete/${encodeURIComponent(filename)}`,{method:'DELETE'})).json();
+                const data=await (await fetch(`/api/delete/${encodeURIComponent(filename)}`,{method:'DELETE'})).json();
                 if (data.status==='deleted') {
                     rowEl.style.transition='opacity .25s,max-height .3s,padding .3s';
                     rowEl.style.maxHeight=rowEl.offsetHeight+'px';
-                    requestAnimationFrame(()=>{
-                        rowEl.style.opacity='0'; rowEl.style.maxHeight='0';
-                        rowEl.style.padding='0'; rowEl.style.overflow='hidden';
-                    });
-                    setTimeout(()=>rowEl.remove(), 350);
+                    requestAnimationFrame(()=>{ rowEl.style.opacity='0'; rowEl.style.maxHeight='0'; rowEl.style.padding='0'; rowEl.style.overflow='hidden'; });
+                    setTimeout(()=>rowEl.remove(),350);
                 } else { rowEl.classList.remove('deleting'); alert('Delete failed: '+(data.message||'Unknown')); }
             } catch(e) { rowEl.classList.remove('deleting'); alert('Delete failed: '+e.message); }
         }
 
         /* ── Recordings ── */
         async function loadRecordings() {
-            if (isLoading) return;
-            isLoading = true;
-            const container = document.getElementById('recordingsContainer');
+            if (isLoading) return; isLoading=true;
+            const container=document.getElementById('recordingsContainer');
             try {
-                const response = await fetch('/api/recordings');
+                const response=await fetch('/api/recordings');
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const recordings = await response.json();
-                if (!recordings||recordings.length===0) {
-                    container.innerHTML='<div class="state-msg">No recordings yet</div>';
-                    return;
-                }
-                container.innerHTML = recordings.map(r=>`
+                const recordings=await response.json();
+                if (!recordings||recordings.length===0) { container.innerHTML='<div class="state-msg">No recordings yet</div>'; return; }
+                container.innerHTML=recordings.map(r=>`
                     <div class="recording-item" data-filename="${r.filename}">
                         <span class="recording-info">${r.display_name}</span>
                         <div class="recording-actions">
@@ -782,56 +679,51 @@
                             <button class="rec-action-btn delete-btn" title="Delete" onclick="deleteRecording('${r.filename}',this.closest('.recording-item'))">&#128465;</button>
                         </div>
                     </div>`).join('');
-                recordingsLoaded = true;
-            } catch(error) {
-                container.innerHTML=`<div class="state-msg error">Error: ${error.message}</div>`;
-            } finally { isLoading=false; }
+                recordingsLoaded=true;
+            } catch(error) { container.innerHTML=`<div class="state-msg error">Error: ${error.message}</div>`; }
+            finally { isLoading=false; }
         }
 
         /* ── Status ── */
         async function updateStatus() {
             try {
-                const data = await (await fetch('/api/status')).json();
-                document.getElementById('connectionDot').className = 'dot';
-                document.getElementById('connectionText').textContent = 'Connected';
-                const active = data.recording_status==='active';
-                document.getElementById('recordingDot').className  = active ? 'dot recording' : 'dot off';
-                document.getElementById('recordingText').textContent = active ? 'Recording' : 'Not Recording';
+                const data=await (await fetch('/api/status')).json();
+                document.getElementById('connectionDot').className='dot';
+                document.getElementById('connectionText').textContent='Connected';
+                const active=data.recording_status==='active';
+                document.getElementById('recordingDot').className=active?'dot recording':'dot off';
+                document.getElementById('recordingText').textContent=active?'Recording':'Not Recording';
                 setRecordingUI(active);
                 if (data.disk_usage) {
-                    const {percent:pct, used, free, total} = data.disk_usage;
-                    document.getElementById('diskValues').textContent =
-                        `${(used/1e9).toFixed(1)} GB used \u00b7 ${(free/1e9).toFixed(1)} GB free of ${(total/1e9).toFixed(1)} GB`;
-                    const bar = document.getElementById('diskBar');
-                    bar.style.width = Math.round(pct)+'%';
-                    bar.className = 'progress-fill'+(pct>=90?' crit':pct>=75?' warn':'');
+                    const {percent:pct,used,free,total}=data.disk_usage;
+                    document.getElementById('diskValues').textContent=`${(used/1e9).toFixed(1)} GB used \u00b7 ${(free/1e9).toFixed(1)} GB free of ${(total/1e9).toFixed(1)} GB`;
+                    const bar=document.getElementById('diskBar');
+                    bar.style.width=Math.round(pct)+'%';
+                    bar.className='progress-fill'+(pct>=90?' crit':pct>=75?' warn':'');
                 }
-                const netList = document.getElementById('netList');
-                netList.innerHTML = (data.network_interfaces&&data.network_interfaces.length)
-                    ? data.network_interfaces.map(n=>`<div class="net-row"><span class="net-iface">${n.interface}</span><span class="net-ip">${n.ip}</span></div>`).join('')
-                    : '<div class="net-row"><span class="net-iface">\u2014</span><span class="net-ip">No interfaces</span></div>';
-            } catch {
-                document.getElementById('connectionDot').className = 'dot off';
-                document.getElementById('connectionText').textContent = 'Disconnected';
-            }
+                const netList=document.getElementById('netList');
+                netList.innerHTML=(data.network_interfaces&&data.network_interfaces.length)
+                    ?data.network_interfaces.map(n=>`<div class="net-row"><span class="net-iface">${n.interface}</span><span class="net-ip">${n.ip}</span></div>`).join('')
+                    :'<div class="net-row"><span class="net-iface">\u2014</span><span class="net-ip">No interfaces</span></div>';
+            } catch { document.getElementById('connectionDot').className='dot off'; document.getElementById('connectionText').textContent='Disconnected'; }
         }
 
-        /* ── Lazy-load recordings ── */
+        /* ── Lazy-load ── */
         function setupRecordingsLazyLoad() {
-            const card = document.getElementById('recordingsCard');
+            const card=document.getElementById('recordingsCard');
             if (!('IntersectionObserver' in window)) { loadRecordings(); return; }
-            const obs = new IntersectionObserver(entries=>{
+            const obs=new IntersectionObserver(entries=>{
                 entries.forEach(e=>{ if(e.isIntersecting&&!recordingsLoaded){ loadRecordings(); if(recordingsLoaded) obs.disconnect(); } });
-            }, {rootMargin:'200px'});
+            },{rootMargin:'200px'});
             obs.observe(card);
         }
 
         showOverlay('idle');
-        window.addEventListener('load', ()=>{
+        window.addEventListener('load',()=>{
             updateStatus();
             setupRecordingsLazyLoad();
-            setInterval(updateStatus, 30000);
-            setInterval(()=>{ if(recordingsLoaded) loadRecordings(); }, 300000);
+            setInterval(updateStatus,30000);
+            setInterval(()=>{ if(recordingsLoaded) loadRecordings(); },300000);
         });
     </script>
 </body>
