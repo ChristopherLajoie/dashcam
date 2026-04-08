@@ -55,14 +55,11 @@
             background: #34c759;
             flex-shrink: 0;
         }
-
         .dot.off { background: #ff3b30; }
-
         .dot.recording {
             background: #ff3b30;
             animation: pulse 1.6s ease-in-out infinite;
         }
-
         @keyframes pulse {
             0%, 100% { opacity: 1; transform: scale(1); }
             50%       { opacity: 0.45; transform: scale(0.8); }
@@ -76,11 +73,7 @@
             margin-bottom: 12px;
             overflow: hidden;
         }
-
-        .card-header {
-            padding: 16px 20px 0;
-        }
-
+        .card-header { padding: 16px 20px 0; }
         .card-title {
             font-size: 12px;
             font-weight: 600;
@@ -89,12 +82,38 @@
             letter-spacing: 0.06em;
         }
 
-        /* ── Video ── */
+        /* ── Live block (standalone, no card header) ── */
+        .live-block {
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.06);
+            background: #111;
+            margin-bottom: 0;
+            /* shadow so it lifts like the other cards */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+
+        /* ── Video wrapper ── */
         .video-wrapper {
             position: relative;
             width: 100%;
             aspect-ratio: 16/9;
             background: #111;
+        }
+
+        /* Fullscreen: make wrapper fill screen */
+        .video-wrapper:fullscreen,
+        .video-wrapper:-webkit-full-screen {
+            width: 100vw;
+            height: 100vh;
+            aspect-ratio: unset;
+            border-radius: 0;
+        }
+        .video-wrapper:fullscreen #liveVideo,
+        .video-wrapper:-webkit-full-screen #liveVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
 
         #liveVideo {
@@ -104,10 +123,29 @@
             object-fit: cover;
         }
 
-        /* Clock — top center of video, stays in fullscreen */
+        /* LIVE badge — top-left of video */
+        .live-badge {
+            position: absolute;
+            top: 10px;
+            left: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: white;
+            background: rgba(0,0,0,0.45);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            padding: 3px 8px;
+            border-radius: 6px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Clock — top center, inside wrapper → follows fullscreen */
         .video-clock {
             position: absolute;
-            top: 12px;
+            top: 10px;
             left: 50%;
             transform: translateX(-50%);
             color: white;
@@ -115,7 +153,6 @@
             z-index: 10;
             text-shadow: 0 1px 4px rgba(0,0,0,0.7);
         }
-
         .video-clock .clock-time {
             font-size: 20px;
             font-weight: 600;
@@ -133,7 +170,6 @@
             justify-content: center;
             pointer-events: none;
         }
-
         .overlay-btn {
             pointer-events: all;
             width: 64px;
@@ -150,17 +186,13 @@
             transition: background 0.18s, transform 0.12s;
             color: white;
         }
-
         .overlay-btn:hover { background: rgba(0,0,0,0.62); transform: scale(1.07); }
         .overlay-btn:active { transform: scale(0.95); }
-
         .video-wrapper .video-overlay.live-overlay {
             opacity: 0;
             transition: opacity 0.2s;
         }
-
         .video-wrapper:hover .video-overlay.live-overlay { opacity: 1; }
-
         #loadingOverlay { background: rgba(0,0,0,0.35); }
 
         .spinner {
@@ -171,41 +203,61 @@
             border-radius: 50%;
             animation: spin 0.75s linear infinite;
         }
-
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .stop-icon {
-            width: 16px;
-            height: 16px;
-            background: white;
-            border-radius: 2px;
-        }
-
+        .stop-icon { width: 16px; height: 16px; background: white; border-radius: 2px; }
         .play-icon {
-            width: 0;
-            height: 0;
+            width: 0; height: 0;
             border-style: solid;
             border-width: 11px 0 11px 20px;
             border-color: transparent transparent transparent white;
             margin-left: 4px;
         }
 
-        /* ── Info row — between live card and recordings card ── */
+        /* ── Video toolbar (below video, inside live-block) ── */
+        .video-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 6px 10px;
+            background: #1a1a1a;
+            gap: 6px;
+        }
+
+        .toolbar-btn {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 7px;
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.75);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, color 0.15s, transform 0.1s;
+            flex-shrink: 0;
+        }
+        .toolbar-btn:hover { background: rgba(255,255,255,0.16); color: white; }
+        .toolbar-btn:active { transform: scale(0.92); }
+
+        /* SVG icons inside toolbar buttons */
+        .toolbar-btn svg { width: 16px; height: 16px; display: block; }
+
+        /* ── Info row ── */
         .info-row {
             display: flex;
             align-items: center;
             justify-content: flex-end;
             padding: 0 4px;
-            margin-top: -6px;
+            margin-top: 6px;
             margin-bottom: 6px;
         }
-
         .info-toggle-btn {
             display: inline-flex;
             align-items: center;
             gap: 5px;
             padding: 5px 12px;
-            border: none;
             border-radius: 99px;
             background: white;
             border: 1px solid rgba(0,0,0,0.07);
@@ -216,12 +268,11 @@
             letter-spacing: -0.01em;
             transition: background 0.15s, color 0.15s, transform 0.1s;
         }
-
         .info-toggle-btn:hover { background: #e5e5ea; color: #3a3a3c; }
         .info-toggle-btn:active { transform: scale(0.94); }
         .info-toggle-btn.active { background: #1c1c1e; color: white; border-color: #1c1c1e; }
 
-        /* ── Stream info panel (below live card, above recordings) ── */
+        /* ── Stream info panel ── */
         .stream-info-panel {
             overflow: hidden;
             max-height: 0;
@@ -229,13 +280,11 @@
             transition: max-height 0.25s ease, opacity 0.2s ease, margin 0.25s ease;
             margin-bottom: 0;
         }
-
         .stream-info-panel.visible {
             max-height: 80px;
             opacity: 1;
             margin-bottom: 12px;
         }
-
         .stream-info-inner {
             background: white;
             border-radius: 14px;
@@ -244,25 +293,13 @@
             display: flex;
             gap: 24px;
         }
-
-        .stream-info-item {
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-        }
-
+        .stream-info-item { display: flex; flex-direction: column; gap: 1px; }
         .stream-info-label {
-            font-size: 10px;
-            font-weight: 600;
-            color: #8e8e93;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
+            font-size: 10px; font-weight: 600; color: #8e8e93;
+            text-transform: uppercase; letter-spacing: 0.06em;
         }
-
         .stream-info-value {
-            font-size: 13px;
-            font-weight: 500;
-            color: #1c1c1e;
+            font-size: 13px; font-weight: 500; color: #1c1c1e;
             font-variant-numeric: tabular-nums;
             font-family: "SF Mono", "Fira Mono", monospace;
         }
@@ -275,7 +312,7 @@
             gap: 12px;
         }
 
-        /* ── Generic action button (outline pill) ── */
+        /* ── Action pill button ── */
         .action-pill-btn {
             display: inline-flex;
             align-items: center;
@@ -289,147 +326,65 @@
             white-space: nowrap;
             transition: background 0.18s, color 0.18s, opacity 0.18s, transform 0.1s;
         }
-
         .action-pill-btn:active { transform: scale(0.96); }
         .action-pill-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
 
-        #wolBtn {
-            border: 1.5px solid #6e6cff;
-            background: transparent;
-            color: #6e6cff;
-        }
+        #wolBtn    { border: 1.5px solid #6e6cff; background: transparent; color: #6e6cff; }
         #wolBtn:hover:not(:disabled) { background: #6e6cff; color: white; }
 
-        #recordBtn {
-            border: 1.5px solid #ff3b30;
-            background: transparent;
-            color: #ff3b30;
-        }
+        #recordBtn { border: 1.5px solid #ff3b30; background: transparent; color: #ff3b30; }
         #recordBtn:hover:not(:disabled) { background: #ff3b30; color: white; }
-        #recordBtn.is-recording {
-            border-color: #8e8e93;
-            color: #8e8e93;
-        }
+        #recordBtn.is-recording { border-color: #8e8e93; color: #8e8e93; }
         #recordBtn.is-recording:hover:not(:disabled) { background: #8e8e93; color: white; }
 
         .status-label { font-size: 13px; color: #8e8e93; }
 
-        /* ── Divider ── */
-        .card-divider {
-            height: 1px;
-            background: rgba(0,0,0,0.05);
-            margin: 0 20px;
-        }
+        .card-divider { height: 1px; background: rgba(0,0,0,0.05); margin: 0 20px; }
 
-        /* ── Disk progress bar ── */
+        /* ── Disk ── */
         .disk-section { padding: 14px 20px 18px; }
-
-        .disk-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 8px;
-        }
-
+        .disk-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
         .disk-label { font-size: 13px; color: #3a3a3c; font-weight: 500; }
         .disk-values { font-size: 12px; color: #8e8e93; }
-
-        .progress-track {
-            width: 100%;
-            height: 6px;
-            background: #f2f2f7;
-            border-radius: 99px;
-            overflow: hidden;
-        }
-
+        .progress-track { width: 100%; height: 6px; background: #f2f2f7; border-radius: 99px; overflow: hidden; }
         .progress-fill {
-            height: 100%;
-            border-radius: 99px;
-            background: #34c759;
-            transition: width 0.5s ease, background 0.3s;
-            width: 0%;
+            height: 100%; border-radius: 99px; background: #34c759;
+            transition: width 0.5s ease, background 0.3s; width: 0%;
         }
+        .progress-fill.warn { background: #ff9f0a; }
+        .progress-fill.crit { background: #ff3b30; }
 
-        .progress-fill.warn  { background: #ff9f0a; }
-        .progress-fill.crit  { background: #ff3b30; }
-
-        /* ── Network interfaces ── */
+        /* ── Network ── */
         .net-list { padding: 8px 20px 14px; border-top: 1px solid rgba(0,0,0,0.05); }
-
         .net-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 7px 0;
-            border-bottom: 1px solid rgba(0,0,0,0.04);
-            font-size: 13px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 7px 0; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 13px;
         }
-
         .net-row:last-child { border-bottom: none; }
-
-        .net-iface {
-            font-weight: 600;
-            color: #3a3a3c;
-            font-family: "SF Mono", "Fira Mono", monospace;
-            font-size: 12px;
-        }
-
-        .net-ip {
-            color: #8e8e93;
-            font-family: "SF Mono", "Fira Mono", monospace;
-            font-size: 12px;
-        }
+        .net-iface { font-weight: 600; color: #3a3a3c; font-family: "SF Mono","Fira Mono",monospace; font-size: 12px; }
+        .net-ip    { color: #8e8e93; font-family: "SF Mono","Fira Mono",monospace; font-size: 12px; }
 
         /* ── Recordings ── */
         .recordings-list { padding: 4px 8px 8px; }
-
         .recording-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 11px 12px;
-            border-radius: 10px;
-            transition: background 0.15s;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 11px 12px; border-radius: 10px; transition: background 0.15s;
         }
-
         .recording-item:hover { background: #f2f2f7; }
         .recording-info { font-size: 14px; color: #3a3a3c; letter-spacing: -0.01em; }
         .recording-actions { display: flex; gap: 6px; }
-
         .rec-action-btn {
-            width: 32px;
-            height: 32px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            background: #f2f2f7;
-            color: #1c1c1e;
+            width: 32px; height: 32px; border: none; border-radius: 8px; cursor: pointer;
+            text-decoration: none; display: flex; align-items: center; justify-content: center;
+            font-size: 14px; background: #f2f2f7; color: #1c1c1e;
             transition: background 0.15s, transform 0.1s;
         }
-
         .rec-action-btn:hover { background: #e5e5ea; }
         .rec-action-btn:active { transform: scale(0.92); }
-
         .rec-action-btn.delete-btn:hover { background: #ff3b30; color: white; }
+        .recording-item.deleting { opacity: 0.35; pointer-events: none; transition: opacity 0.25s; }
 
-        .recording-item.deleting {
-            opacity: 0.35;
-            pointer-events: none;
-            transition: opacity 0.25s;
-        }
-
-        .state-msg {
-            text-align: center;
-            font-size: 13px;
-            color: #8e8e93;
-            padding: 24px 20px;
-        }
-
+        .state-msg { text-align: center; font-size: 13px; color: #8e8e93; padding: 24px 20px; }
         .state-msg.error { color: #ff3b30; }
 
         /* ── Skeleton ── */
@@ -437,32 +392,24 @@
             0%   { background-position: -400px 0; }
             100% { background-position:  400px 0; }
         }
-
-        .skeleton-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 11px 12px;
-        }
-
+        .skeleton-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 12px; }
         .skeleton-bar {
-            height: 14px;
-            border-radius: 6px;
+            height: 14px; border-radius: 6px;
             background: linear-gradient(90deg, #e5e5ea 25%, #f2f2f7 50%, #e5e5ea 75%);
-            background-size: 400px 100%;
-            animation: shimmer 1.4s ease-in-out infinite;
+            background-size: 400px 100%; animation: shimmer 1.4s ease-in-out infinite;
         }
-
-        .skeleton-name  { width: 55%; }
-        .skeleton-btns  { display: flex; gap: 6px; }
-        .skeleton-btn   { width: 32px; height: 32px; border-radius: 8px;
-                          background: linear-gradient(90deg, #e5e5ea 25%, #f2f2f7 50%, #e5e5ea 75%);
-                          background-size: 400px 100%;
-                          animation: shimmer 1.4s ease-in-out infinite; }
+        .skeleton-name { width: 55%; }
+        .skeleton-btns { display: flex; gap: 6px; }
+        .skeleton-btn {
+            width: 32px; height: 32px; border-radius: 8px;
+            background: linear-gradient(90deg, #e5e5ea 25%, #f2f2f7 50%, #e5e5ea 75%);
+            background-size: 400px 100%; animation: shimmer 1.4s ease-in-out infinite;
+        }
 
         @media (max-width: 600px) {
             .container { padding: 20px 12px 40px; }
             .card { border-radius: 14px; }
+            .live-block { border-radius: 14px; }
         }
     </style>
 </head>
@@ -481,17 +428,15 @@
             </div>
         </div>
 
-        <!-- Live view card -->
-        <div class="card">
-            <div class="card-header">
-                <span class="card-title">Live</span>
-            </div>
-
-            <!-- Video -->
+        <!-- Live block — no card header, video flush to top ── -->
+        <div class="live-block" style="margin-bottom:12px;">
             <div class="video-wrapper" id="videoWrapper">
-                <video id="liveVideo" autoplay muted playsinline controls></video>
+                <video id="liveVideo" autoplay muted playsinline></video>
 
-                <!-- Clock — top center, lives inside video-wrapper so it follows into fullscreen -->
+                <!-- LIVE badge top-left -->
+                <div class="live-badge">Live</div>
+
+                <!-- Clock top-center — inside wrapper, follows fullscreen -->
                 <div class="video-clock">
                     <div class="clock-time" id="clockTime">--:--:--</div>
                 </div>
@@ -508,7 +453,7 @@
                     <div class="spinner"></div>
                 </div>
 
-                <!-- Live overlay (hover to reveal stop) -->
+                <!-- Live overlay (hover to stop) -->
                 <div class="video-overlay live-overlay" id="liveOverlay" style="display:none;">
                     <button class="overlay-btn" onclick="stopStream()">
                         <div class="stop-icon"></div>
@@ -522,16 +467,36 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Thin dark toolbar with fullscreen button -->
+            <div class="video-toolbar">
+                <button class="toolbar-btn" id="fullscreenBtn" onclick="toggleFullscreen()" title="Fullscreen">
+                    <!-- expand icon -->
+                    <svg id="fsIconExpand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 3 21 3 21 9"/>
+                        <polyline points="9 21 3 21 3 15"/>
+                        <line x1="21" y1="3" x2="14" y2="10"/>
+                        <line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                    <!-- compress icon (shown when fullscreen) -->
+                    <svg id="fsIconCompress" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                        <polyline points="4 14 10 14 10 20"/>
+                        <polyline points="20 10 14 10 14 4"/>
+                        <line x1="10" y1="14" x2="3" y2="21"/>
+                        <line x1="21" y1="3" x2="14" y2="10"/>
+                    </svg>
+                </button>
+            </div>
         </div>
 
-        <!-- Info toggle button — outside the card, right-aligned -->
+        <!-- Info toggle -->
         <div class="info-row">
             <button class="info-toggle-btn" id="infoToggleBtn" onclick="toggleStreamInfo()">
                 <span>i</span> Stream info
             </button>
         </div>
 
-        <!-- Stream info panel — slides open below the button -->
+        <!-- Stream info panel -->
         <div class="stream-info-panel" id="streamInfoPanel">
             <div class="stream-info-inner">
                 <div class="stream-info-item">
@@ -545,7 +510,7 @@
             </div>
         </div>
 
-        <!-- Recording control + recordings list (merged card) -->
+        <!-- Recording card -->
         <div class="card" id="recordingsCard">
             <div class="card-header">
                 <span class="card-title">Recording</span>
@@ -612,73 +577,80 @@
         /* ── Clock ── */
         function updateClock() {
             const now = new Date();
-            const hh  = String(now.getHours()).padStart(2, '0');
-            const mm  = String(now.getMinutes()).padStart(2, '0');
-            const ss  = String(now.getSeconds()).padStart(2, '0');
-            document.getElementById('clockTime').textContent = `${hh}:${mm}:${ss}`;
+            document.getElementById('clockTime').textContent =
+                String(now.getHours()).padStart(2,'0') + ':' +
+                String(now.getMinutes()).padStart(2,'0') + ':' +
+                String(now.getSeconds()).padStart(2,'0');
         }
-
         setInterval(updateClock, 1000);
         updateClock();
 
-        /* ── Stream info toggle ── */
-        function toggleStreamInfo() {
-            streamInfoVisible = !streamInfoVisible;
-            const panel = document.getElementById('streamInfoPanel');
-            const btn   = document.getElementById('infoToggleBtn');
-            panel.classList.toggle('visible', streamInfoVisible);
-            btn.classList.toggle('active', streamInfoVisible);
-            if (streamInfoVisible && streamActive) fetchStreamInfo();
+        /* ── Fullscreen (wrapper, not video — so overlays follow) ── */
+        function toggleFullscreen() {
+            const wrapper = document.getElementById('videoWrapper');
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                (wrapper.requestFullscreen || wrapper.webkitRequestFullscreen).call(wrapper);
+            } else {
+                (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+            }
         }
 
+        function onFullscreenChange() {
+            const inFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            document.getElementById('fsIconExpand').style.display   = inFS ? 'none'  : 'block';
+            document.getElementById('fsIconCompress').style.display = inFS ? 'block' : 'none';
+        }
+        document.addEventListener('fullscreenchange',       onFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+        /* ── Stream info ── */
+        function toggleStreamInfo() {
+            streamInfoVisible = !streamInfoVisible;
+            document.getElementById('streamInfoPanel').classList.toggle('visible', streamInfoVisible);
+            document.getElementById('infoToggleBtn').classList.toggle('active', streamInfoVisible);
+            if (streamInfoVisible && streamActive) fetchStreamInfo();
+        }
         async function fetchStreamInfo() {
             try {
-                const res  = await fetch('/api/stream/info');
-                const data = await res.json();
+                const data = await (await fetch('/api/stream/info')).json();
                 document.getElementById('infoFps').textContent        = data.fps        || '—';
                 document.getElementById('infoResolution').textContent = data.resolution || '—';
-            } catch (e) { /* silent */ }
+            } catch (e) {}
         }
 
         /* ── Overlays ── */
         function showOverlay(name) {
-            document.getElementById('idleOverlay').style.display    = name === 'idle'    ? 'flex' : 'none';
-            document.getElementById('loadingOverlay').style.display = name === 'loading' ? 'flex' : 'none';
-            document.getElementById('liveOverlay').style.display    = name === 'live'    ? 'flex' : 'none';
-            document.getElementById('errorOverlay').style.display   = name === 'error'   ? 'flex' : 'none';
+            document.getElementById('idleOverlay').style.display    = name==='idle'    ? 'flex' : 'none';
+            document.getElementById('loadingOverlay').style.display = name==='loading' ? 'flex' : 'none';
+            document.getElementById('liveOverlay').style.display    = name==='live'    ? 'flex' : 'none';
+            document.getElementById('errorOverlay').style.display   = name==='error'   ? 'flex' : 'none';
         }
 
         function setStreamUI(state) {
             if (state === 'off') {
-                streamActive = false;
-                showOverlay('idle');
+                streamActive = false; showOverlay('idle');
                 document.getElementById('infoFps').textContent        = '—';
                 document.getElementById('infoResolution').textContent = '—';
             } else if (state === 'starting') {
                 showOverlay('loading');
             } else if (state === 'on') {
-                streamActive = true;
-                showOverlay('live');
+                streamActive = true; showOverlay('live');
                 if (streamInfoVisible) fetchStreamInfo();
             } else if (state === 'stopping') {
                 showOverlay('live');
             } else if (state === 'error') {
-                streamActive = false;
-                showOverlay('error');
+                streamActive = false; showOverlay('error');
             }
         }
 
-        async function waitForStreamReady(signal, timeoutMs = 20000) {
+        async function waitForStreamReady(signal, timeoutMs=20000) {
             const deadline = Date.now() + timeoutMs;
             while (Date.now() < deadline) {
                 if (signal.aborted) return false;
                 try {
-                    const res  = await fetch('/api/stream/status', { signal });
-                    const data = await res.json();
+                    const data = await (await fetch('/api/stream/status', {signal})).json();
                     if (data.ready) return true;
-                } catch (e) {
-                    if (e.name === 'AbortError') return false;
-                }
+                } catch(e) { if (e.name==='AbortError') return false; }
                 await new Promise(r => setTimeout(r, 500));
             }
             return false;
@@ -686,176 +658,106 @@
 
         async function startStream() {
             setStreamUI('starting');
-
             if (startAbortController) startAbortController.abort();
             startAbortController = new AbortController();
-            const { signal } = startAbortController;
-
+            const {signal} = startAbortController;
             try {
-                await fetch('/api/stream/start', { method: 'POST', signal });
-            } catch (e) {
+                await fetch('/api/stream/start', {method:'POST', signal});
+            } catch(e) {
                 if (e.name !== 'AbortError') setStreamUI('error');
                 return;
             }
-
             const ready = await waitForStreamReady(signal);
-            if (!ready) {
-                if (!signal.aborted) setStreamUI('error');
-                return;
-            }
-
+            if (!ready) { if (!signal.aborted) setStreamUI('error'); return; }
             if (signal.aborted) return;
 
             const video = document.getElementById('liveVideo');
-
             if (Hls.isSupported()) {
                 if (hlsInstance) hlsInstance.destroy();
                 hlsInstance = new Hls({
-                    liveSyncDurationCount: 2,
-                    liveMaxLatencyDurationCount: 5,
-                    maxBufferLength: 4,
-                    maxMaxBufferLength: 8,
-                    lowLatencyMode: false,
-                    startPosition: -1,
+                    liveSyncDurationCount: 2, liveMaxLatencyDurationCount: 5,
+                    maxBufferLength: 4, maxMaxBufferLength: 8,
+                    lowLatencyMode: false, startPosition: -1,
                 });
                 hlsInstance.loadSource('/api/stream/hls/stream.m3u8');
                 hlsInstance.attachMedia(video);
-                hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-                    video.play();
-                    setStreamUI('on');
-                });
-                hlsInstance.on(Hls.Events.ERROR, (event, data) => {
-                    if (data.fatal) {
-                        setStreamUI('error');
-                        if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-                    }
+                hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => { video.play(); setStreamUI('on'); });
+                hlsInstance.on(Hls.Events.ERROR, (ev, data) => {
+                    if (data.fatal) { setStreamUI('error'); if (hlsInstance) { hlsInstance.destroy(); hlsInstance=null; } }
                 });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = '/api/stream/hls/stream.m3u8?t=' + Date.now();
-                video.play();
-                setStreamUI('on');
-            } else {
-                setStreamUI('error');
-            }
+                video.play(); setStreamUI('on');
+            } else { setStreamUI('error'); }
         }
 
         async function stopStream() {
-            if (startAbortController) {
-                startAbortController.abort();
-                startAbortController = null;
-            }
-
+            if (startAbortController) { startAbortController.abort(); startAbortController=null; }
             setStreamUI('stopping');
-
-            if (hlsInstance) {
-                hlsInstance.destroy();
-                hlsInstance = null;
-            }
-
-            const video = document.getElementById('liveVideo');
-            video.pause();
-
-            try {
-                await fetch('/api/stream/stop', { method: 'POST' });
-            } catch (e) { /* best-effort */ }
-
+            if (hlsInstance) { hlsInstance.destroy(); hlsInstance=null; }
+            document.getElementById('liveVideo').pause();
+            try { await fetch('/api/stream/stop', {method:'POST'}); } catch(e) {}
             setStreamUI('off');
         }
 
-        /* ── Recording control ── */
+        /* ── Recording ── */
         function setRecordingUI(recording) {
             isRecording = recording;
-            const btn   = document.getElementById('recordBtn');
+            const btn = document.getElementById('recordBtn');
             btn.textContent = recording ? 'Stop' : 'Start';
             btn.classList.toggle('is-recording', recording);
         }
-
         async function toggleRecording() {
             const btn   = document.getElementById('recordBtn');
             const label = document.getElementById('recordStatusLabel');
-
             btn.disabled = true;
             label.style.color = '#8e8e93';
             label.textContent = isRecording ? 'Stopping…' : 'Starting…';
-
-            const endpoint = isRecording ? '/api/recording/stop' : '/api/recording/start';
-
             try {
-                const res  = await fetch(endpoint, { method: 'POST' });
-                const data = await res.json();
-
-                if (data.status === 'started' || data.status === 'stopped') {
-                    setRecordingUI(data.status === 'started');
+                const data = await (await fetch(isRecording?'/api/recording/stop':'/api/recording/start', {method:'POST'})).json();
+                if (data.status==='started'||data.status==='stopped') {
+                    setRecordingUI(data.status==='started');
                     label.style.color = '#34c759';
-                    label.textContent = data.status === 'started' ? '\u2714 Started' : '\u2714 Stopped';
-                    if (data.status === 'stopped') {
-                        setTimeout(loadRecordings, 2000);
-                    }
+                    label.textContent = data.status==='started' ? '\u2714 Started' : '\u2714 Stopped';
+                    if (data.status==='stopped') setTimeout(loadRecordings, 2000);
                 } else {
-                    label.style.color = '#ff3b30';
-                    label.textContent = '\u26a0 ' + (data.message || 'Error');
+                    label.style.color='#ff3b30';
+                    label.textContent='\u26a0 '+(data.message||'Error');
                 }
-            } catch (e) {
-                label.style.color = '#ff3b30';
-                label.textContent = '\u26a0 Failed';
-            }
-
+            } catch(e) { label.style.color='#ff3b30'; label.textContent='\u26a0 Failed'; }
             btn.disabled = false;
-            setTimeout(() => { label.textContent = ''; }, 4000);
+            setTimeout(()=>{ label.textContent=''; }, 4000);
         }
 
         /* ── WOL ── */
         async function wakePC() {
             const btn   = document.getElementById('wolBtn');
             const label = document.getElementById('wolStatusLabel');
-
-            btn.disabled = true;
-            label.style.color = '#8e8e93';
-            label.textContent = 'Sending…';
-
+            btn.disabled = true; label.style.color='#8e8e93'; label.textContent='Sending…';
             try {
-                const res  = await fetch('/api/wol', { method: 'POST' });
-                const data = await res.json();
-                if (data.status === 'sent') {
-                    label.style.color = '#34c759';
-                    label.textContent = '\u2714 Sent';
-                } else {
-                    label.style.color = '#ff3b30';
-                    label.textContent = '\u26a0 ' + data.message;
-                }
-            } catch (e) {
-                label.style.color = '#ff3b30';
-                label.textContent = '\u26a0 Failed';
-            }
-
-            setTimeout(() => { btn.disabled = false; label.textContent = ''; }, 5000);
+                const data = await (await fetch('/api/wol',{method:'POST'})).json();
+                label.style.color = data.status==='sent' ? '#34c759' : '#ff3b30';
+                label.textContent = data.status==='sent' ? '\u2714 Sent' : '\u26a0 '+data.message;
+            } catch(e) { label.style.color='#ff3b30'; label.textContent='\u26a0 Failed'; }
+            setTimeout(()=>{ btn.disabled=false; label.textContent=''; }, 5000);
         }
 
-        /* ── Delete recording ── */
+        /* ── Delete ── */
         async function deleteRecording(filename, rowEl) {
             if (!confirm(`Delete ${filename}?`)) return;
             rowEl.classList.add('deleting');
             try {
-                const res = await fetch(`/api/delete/${encodeURIComponent(filename)}`, { method: 'DELETE' });
-                const data = await res.json();
-                if (data.status === 'deleted') {
-                    rowEl.style.transition = 'opacity 0.25s, max-height 0.3s, padding 0.3s';
-                    rowEl.style.maxHeight = rowEl.offsetHeight + 'px';
-                    requestAnimationFrame(() => {
-                        rowEl.style.opacity = '0';
-                        rowEl.style.maxHeight = '0';
-                        rowEl.style.padding = '0';
-                        rowEl.style.overflow = 'hidden';
+                const data = await (await fetch(`/api/delete/${encodeURIComponent(filename)}`,{method:'DELETE'})).json();
+                if (data.status==='deleted') {
+                    rowEl.style.transition='opacity .25s,max-height .3s,padding .3s';
+                    rowEl.style.maxHeight=rowEl.offsetHeight+'px';
+                    requestAnimationFrame(()=>{
+                        rowEl.style.opacity='0'; rowEl.style.maxHeight='0';
+                        rowEl.style.padding='0'; rowEl.style.overflow='hidden';
                     });
-                    setTimeout(() => rowEl.remove(), 350);
-                } else {
-                    rowEl.classList.remove('deleting');
-                    alert('Delete failed: ' + (data.message || 'Unknown error'));
-                }
-            } catch (e) {
-                rowEl.classList.remove('deleting');
-                alert('Delete failed: ' + e.message);
-            }
+                    setTimeout(()=>rowEl.remove(), 350);
+                } else { rowEl.classList.remove('deleting'); alert('Delete failed: '+(data.message||'Unknown')); }
+            } catch(e) { rowEl.classList.remove('deleting'); alert('Delete failed: '+e.message); }
         }
 
         /* ── Recordings ── */
@@ -867,112 +769,69 @@
                 const response = await fetch('/api/recordings');
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const recordings = await response.json();
-                if (!recordings || recordings.length === 0) {
-                    container.innerHTML = '<div class="state-msg">No recordings yet</div>';
+                if (!recordings||recordings.length===0) {
+                    container.innerHTML='<div class="state-msg">No recordings yet</div>';
                     return;
                 }
-                let html = '';
-                for (const recording of recordings) {
-                    html += `
-                        <div class="recording-item" data-filename="${recording.filename}">
-                            <span class="recording-info">${recording.display_name}</span>
-                            <div class="recording-actions">
-                                <a href="/api/play/${recording.filename}" target="_blank" class="rec-action-btn" title="Play">&#9654;</a>
-                                <a href="/api/download/${recording.filename}" class="rec-action-btn" title="Download">&#8595;</a>
-                                <button class="rec-action-btn delete-btn" title="Delete" onclick="deleteRecording('${recording.filename}', this.closest('.recording-item'))">&#128465;</button>
-                            </div>
-                        </div>`;
-                }
-                container.innerHTML = html;
+                container.innerHTML = recordings.map(r=>`
+                    <div class="recording-item" data-filename="${r.filename}">
+                        <span class="recording-info">${r.display_name}</span>
+                        <div class="recording-actions">
+                            <a href="/api/play/${r.filename}" target="_blank" class="rec-action-btn" title="Play">&#9654;</a>
+                            <a href="/api/download/${r.filename}" class="rec-action-btn" title="Download">&#8595;</a>
+                            <button class="rec-action-btn delete-btn" title="Delete" onclick="deleteRecording('${r.filename}',this.closest('.recording-item'))">&#128465;</button>
+                        </div>
+                    </div>`).join('');
                 recordingsLoaded = true;
-            } catch (error) {
-                container.innerHTML = `<div class="state-msg error">Error: ${error.message}</div>`;
-            } finally {
-                isLoading = false;
-            }
+            } catch(error) {
+                container.innerHTML=`<div class="state-msg error">Error: ${error.message}</div>`;
+            } finally { isLoading=false; }
         }
 
         /* ── Status ── */
         async function updateStatus() {
             try {
-                const response = await fetch('/api/status');
-                if (!response.ok) throw new Error('Failed');
-                const data = await response.json();
-
+                const data = await (await fetch('/api/status')).json();
                 document.getElementById('connectionDot').className = 'dot';
                 document.getElementById('connectionText').textContent = 'Connected';
-
-                const recDot  = document.getElementById('recordingDot');
-                const recText = document.getElementById('recordingText');
-                const active  = data.recording_status === 'active';
-
-                if (active) {
-                    recDot.className = 'dot recording';
-                    recText.textContent = 'Recording';
-                } else {
-                    recDot.className = 'dot off';
-                    recText.textContent = 'Not Recording';
-                }
-
+                const active = data.recording_status==='active';
+                document.getElementById('recordingDot').className  = active ? 'dot recording' : 'dot off';
+                document.getElementById('recordingText').textContent = active ? 'Recording' : 'Not Recording';
                 setRecordingUI(active);
-
                 if (data.disk_usage) {
-                    const pct     = Math.round(data.disk_usage.percent);
-                    const usedGB  = (data.disk_usage.used  / 1e9).toFixed(1);
-                    const freeGB  = (data.disk_usage.free  / 1e9).toFixed(1);
-                    const totalGB = (data.disk_usage.total / 1e9).toFixed(1);
-
+                    const {percent:pct, used, free, total} = data.disk_usage;
                     document.getElementById('diskValues').textContent =
-                        `${usedGB} GB used \u00b7 ${freeGB} GB free of ${totalGB} GB`;
-
+                        `${(used/1e9).toFixed(1)} GB used \u00b7 ${(free/1e9).toFixed(1)} GB free of ${(total/1e9).toFixed(1)} GB`;
                     const bar = document.getElementById('diskBar');
-                    bar.style.width = pct + '%';
-                    bar.className = 'progress-fill' +
-                        (pct >= 90 ? ' crit' : pct >= 75 ? ' warn' : '');
+                    bar.style.width = Math.round(pct)+'%';
+                    bar.className = 'progress-fill'+(pct>=90?' crit':pct>=75?' warn':'');
                 }
-
                 const netList = document.getElementById('netList');
-                if (data.network_interfaces && data.network_interfaces.length > 0) {
-                    netList.innerHTML = data.network_interfaces.map(n => `
-                        <div class="net-row">
-                            <span class="net-iface">${n.interface}</span>
-                            <span class="net-ip">${n.ip}</span>
-                        </div>`).join('');
-                } else {
-                    netList.innerHTML = '<div class="net-row"><span class="net-iface">\u2014</span><span class="net-ip">No interfaces</span></div>';
-                }
-
+                netList.innerHTML = (data.network_interfaces&&data.network_interfaces.length)
+                    ? data.network_interfaces.map(n=>`<div class="net-row"><span class="net-iface">${n.interface}</span><span class="net-ip">${n.ip}</span></div>`).join('')
+                    : '<div class="net-row"><span class="net-iface">\u2014</span><span class="net-ip">No interfaces</span></div>';
             } catch {
                 document.getElementById('connectionDot').className = 'dot off';
                 document.getElementById('connectionText').textContent = 'Disconnected';
             }
         }
 
-        /* ── Lazy-load recordings via IntersectionObserver ── */
+        /* ── Lazy-load recordings ── */
         function setupRecordingsLazyLoad() {
             const card = document.getElementById('recordingsCard');
-            if (!('IntersectionObserver' in window)) {
-                loadRecordings();
-                return;
-            }
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting && !recordingsLoaded) {
-                        loadRecordings();
-                        if (recordingsLoaded) observer.disconnect();
-                    }
-                });
-            }, { rootMargin: '200px' });
-            observer.observe(card);
+            if (!('IntersectionObserver' in window)) { loadRecordings(); return; }
+            const obs = new IntersectionObserver(entries=>{
+                entries.forEach(e=>{ if(e.isIntersecting&&!recordingsLoaded){ loadRecordings(); if(recordingsLoaded) obs.disconnect(); } });
+            }, {rootMargin:'200px'});
+            obs.observe(card);
         }
 
         showOverlay('idle');
-
-        window.addEventListener('load', () => {
+        window.addEventListener('load', ()=>{
             updateStatus();
             setupRecordingsLazyLoad();
             setInterval(updateStatus, 30000);
-            setInterval(() => { if (recordingsLoaded) loadRecordings(); }, 300000);
+            setInterval(()=>{ if(recordingsLoaded) loadRecordings(); }, 300000);
         });
     </script>
 </body>
