@@ -165,7 +165,7 @@ def hls_files(filename):
 def recording_start():
     try:
         result = subprocess.run(
-            ["sudo", "systemctl", "start", "ipcamera-recorder.service"],
+            ["systemctl", "start", "ipcamera-recorder.service"],
             capture_output=True, text=True, timeout=10
         )
         if result.returncode == 0:
@@ -180,7 +180,7 @@ def recording_start():
 def recording_stop():
     try:
         result = subprocess.run(
-            ["sudo", "systemctl", "stop", "ipcamera-recorder.service"],
+            ["systemctl", "stop", "ipcamera-recorder.service"],
             capture_output=True, text=True, timeout=15
         )
         if result.returncode == 0:
@@ -191,6 +191,24 @@ def recording_stop():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 # ──────────────────────────────────────────────────────────────────────────────
+
+
+@app.route("/api/delete/<filename>", methods=["DELETE"])
+def delete_recording(filename):
+    # Safety: only allow .mp4 files that match the expected naming pattern
+    if not filename.endswith(".mp4") or not filename.startswith("recording_"):
+        return jsonify({"status": "error", "message": "Invalid filename"}), 400
+    file_path = os.path.join(RECORDINGS_DIR, filename)
+    # Prevent path traversal
+    if not os.path.abspath(file_path).startswith(os.path.abspath(RECORDINGS_DIR)):
+        return jsonify({"status": "error", "message": "Access denied"}), 403
+    if not os.path.exists(file_path):
+        return jsonify({"status": "error", "message": "File not found"}), 404
+    try:
+        os.remove(file_path)
+        return jsonify({"status": "deleted"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.route("/api/wol", methods=["POST"])
@@ -361,7 +379,7 @@ def get_status():
     recording_status = "unknown"
     try:
         result = subprocess.run(
-            ["systemctl", "is-active", "ipcamera-recorder"],
+            ["systemctl", "is-active", "ipcamera-recorder.service"],
             capture_output=True, text=True,
         )
         recording_status = result.stdout.strip()
