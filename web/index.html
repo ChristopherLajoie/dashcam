@@ -267,6 +267,13 @@
 
         .status-label { font-size: 13px; color: #8e8e93; }
 
+        /* ── Divider between record controls and list ── */
+        .card-divider {
+            height: 1px;
+            background: rgba(0,0,0,0.05);
+            margin: 0 20px;
+        }
+
         /* ── Disk progress bar ── */
         .disk-section { padding: 14px 20px 18px; }
 
@@ -328,7 +335,7 @@
         }
 
         /* ── Recordings ── */
-        .recordings-list { padding: 0 8px 8px; }
+        .recordings-list { padding: 4px 8px 8px; }
 
         .recording-item {
             display: flex;
@@ -477,14 +484,26 @@
             </div>
         </div>
 
-        <!-- Recording control card -->
-        <div class="card">
+        <!-- Recording control + recordings list (merged card) -->
+        <div class="card" id="recordingsCard">
             <div class="card-header">
                 <span class="card-title">Recording</span>
             </div>
+            <!-- Record button row -->
             <div class="card-body">
                 <button id="recordBtn" class="action-pill-btn" onclick="toggleRecording()">Start</button>
                 <span id="recordStatusLabel" class="status-label"></span>
+            </div>
+            <!-- Divider -->
+            <div class="card-divider"></div>
+            <!-- Lazy-loaded recordings list -->
+            <div id="recordingsContainer" class="recordings-list">
+                <!-- Skeleton shown until IntersectionObserver fires -->
+                <div id="recordingsSkeleton">
+                    <div class="skeleton-row"><div class="skeleton-bar skeleton-name"></div><div class="skeleton-btns"><div class="skeleton-btn"></div><div class="skeleton-btn"></div><div class="skeleton-btn"></div></div></div>
+                    <div class="skeleton-row"><div class="skeleton-bar skeleton-name" style="width:45%"></div><div class="skeleton-btns"><div class="skeleton-btn"></div><div class="skeleton-btn"></div><div class="skeleton-btn"></div></div></div>
+                    <div class="skeleton-row"><div class="skeleton-bar skeleton-name" style="width:60%"></div><div class="skeleton-btns"><div class="skeleton-btn"></div><div class="skeleton-btn"></div><div class="skeleton-btn"></div></div></div>
+                </div>
             </div>
         </div>
 
@@ -496,21 +515,6 @@
             <div class="card-body">
                 <button id="wolBtn" class="action-pill-btn" onclick="wakePC()">Wake</button>
                 <span id="wolStatusLabel" class="status-label"></span>
-            </div>
-        </div>
-
-        <!-- Recordings card -->
-        <div class="card" id="recordingsCard">
-            <div class="card-header">
-                <span class="card-title">Recordings</span>
-            </div>
-            <div id="recordingsContainer" class="recordings-list">
-                <!-- Skeleton shown until IntersectionObserver fires -->
-                <div id="recordingsSkeleton">
-                    <div class="skeleton-row"><div class="skeleton-bar skeleton-name"></div><div class="skeleton-btns"><div class="skeleton-btn"></div><div class="skeleton-btn"></div><div class="skeleton-btn"></div></div></div>
-                    <div class="skeleton-row"><div class="skeleton-bar skeleton-name" style="width:45%"></div><div class="skeleton-btns"><div class="skeleton-btn"></div><div class="skeleton-btn"></div><div class="skeleton-btn"></div></div></div>
-                    <div class="skeleton-row"><div class="skeleton-bar skeleton-name" style="width:60%"></div><div class="skeleton-btns"><div class="skeleton-btn"></div><div class="skeleton-btn"></div><div class="skeleton-btn"></div></div></div>
-                </div>
             </div>
         </div>
 
@@ -893,7 +897,6 @@
         function setupRecordingsLazyLoad() {
             const card = document.getElementById('recordingsCard');
             if (!('IntersectionObserver' in window)) {
-                // Fallback: just load immediately
                 loadRecordings();
                 return;
             }
@@ -901,12 +904,10 @@
                 entries.forEach(entry => {
                     if (entry.isIntersecting && !recordingsLoaded) {
                         loadRecordings();
-                        // Re-observe is fine — isLoading guard prevents double fetches.
-                        // Stop observing once loaded successfully.
                         if (recordingsLoaded) observer.disconnect();
                     }
                 });
-            }, { rootMargin: '200px' }); // start loading 200px before card enters view
+            }, { rootMargin: '200px' });
             observer.observe(card);
         }
 
