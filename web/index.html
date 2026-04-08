@@ -48,19 +48,19 @@
         .video-clock { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); color: white; pointer-events: none; z-index: 10; text-shadow: 0 1px 4px rgba(0,0,0,0.7); }
         .video-clock .clock-time { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-        /* Fullscreen button - bottom right corner of wrapper */
+        /* Fullscreen button */
         .fs-btn {
-            position: absolute; bottom: 10px; right: 10px; z-index: 20;
+            position: absolute; bottom: 46px; right: 10px; z-index: 20;
             width: 34px; height: 34px; border-radius: 8px;
             background: rgba(0,0,0,0.45); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
             border: none; cursor: pointer; color: white;
             display: flex; align-items: center; justify-content: center;
-            transition: background 0.15s, transform 0.1s;
             opacity: 0; transition: opacity 0.2s, background 0.15s, transform 0.1s;
         }
+        /* Show on hover (desktop) */
         .video-wrapper:hover .fs-btn { opacity: 1; }
         /* Always visible on touch devices */
-        @media (hover: none) { .fs-btn { opacity: 1; } }
+        @media (hover: none) { .fs-btn { opacity: 1; bottom: 10px; } }
         .fs-btn:hover  { background: rgba(0,0,0,0.65); }
         .fs-btn:active { transform: scale(0.92); }
         .fs-btn svg { width: 16px; height: 16px; display: block; }
@@ -163,12 +163,13 @@
 
     <div class="live-block">
         <div class="video-wrapper" id="videoWrapper">
-            <video id="liveVideo" autoplay muted playsinline></video>
+            <!-- controls kept; fs-btn sits above the controls bar on desktop, beside them on mobile -->
+            <video id="liveVideo" autoplay muted playsinline controls></video>
 
             <div class="live-badge">Live</div>
             <div class="video-clock"><div class="clock-time" id="clockTime">--:--:--</div></div>
 
-            <!-- Fullscreen button, bottom-right, always visible on touch -->
+            <!-- Fullscreen button overlay -->
             <button class="fs-btn" id="fsBtn" title="Fullscreen">
                 <svg id="fsExpand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
@@ -264,16 +265,24 @@
     }
     setInterval(updateClock,1000); updateClock();
 
-    /* Fullscreen — always fullscreens the wrapper so clock comes along */
+    /* Fullscreen
+       - Desktop / Android: fullscreen the wrapper so clock travels along
+       - iOS Safari: only video.webkitEnterFullscreen() works on mobile Safari  */
     document.getElementById('fsBtn').addEventListener('click', () => {
         const inFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
         if (inFS) {
             (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+            return;
+        }
+        // iOS Safari: requestFullscreen on a div is not supported
+        if (video.webkitSupportsFullscreen && !wrapper.requestFullscreen) {
+            video.webkitEnterFullscreen();
         } else {
             const req = wrapper.requestFullscreen || wrapper.webkitRequestFullscreen;
             if (req) req.call(wrapper);
         }
     });
+
     function onFSChange() {
         const inFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
         document.getElementById('fsExpand').style.display   = inFS ? 'none'  : 'block';
@@ -281,6 +290,9 @@
     }
     document.addEventListener('fullscreenchange',       onFSChange);
     document.addEventListener('webkitfullscreenchange', onFSChange);
+    // iOS fires webkitbeginfullscreen / webkitendfullscreen on the video element
+    video.addEventListener('webkitbeginfullscreen', () => { document.getElementById('fsExpand').style.display='none';  document.getElementById('fsCompress').style.display='block'; });
+    video.addEventListener('webkitendfullscreen',   () => { document.getElementById('fsExpand').style.display='block'; document.getElementById('fsCompress').style.display='none';  });
 
     /* Stream info */
     function toggleStreamInfo() {
