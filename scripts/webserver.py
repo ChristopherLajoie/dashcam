@@ -165,7 +165,7 @@ def hls_files(filename):
 def recording_start():
     try:
         result = subprocess.run(
-            ["systemctl", "start", "ipcamera-recorder"],
+            ["sudo", "systemctl", "start", "ipcamera-recorder.service"],
             capture_output=True, text=True, timeout=10
         )
         if result.returncode == 0:
@@ -180,7 +180,7 @@ def recording_start():
 def recording_stop():
     try:
         result = subprocess.run(
-            ["systemctl", "stop", "ipcamera-recorder"],
+            ["sudo", "systemctl", "stop", "ipcamera-recorder.service"],
             capture_output=True, text=True, timeout=15
         )
         if result.returncode == 0:
