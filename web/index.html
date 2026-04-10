@@ -199,8 +199,8 @@
     </div>
     <div class="stream-info-panel" id="streamInfoPanel">
         <div class="stream-info-inner">
-            <div class="stream-info-item"><span class="stream-info-label">FPS</span><span class="stream-info-value" id="infoFps">—</span></div>
-            <div class="stream-info-item"><span class="stream-info-label">Resolution</span><span class="stream-info-value" id="infoResolution">—</span></div>
+            <div class="stream-info-item"><span class="stream-info-label">FPS</span><span class="stream-info-value" id="infoFps">&#8212;</span></div>
+            <div class="stream-info-item"><span class="stream-info-label">Resolution</span><span class="stream-info-value" id="infoResolution">&#8212;</span></div>
         </div>
     </div>
 
@@ -234,12 +234,12 @@
         <div class="disk-section">
             <div class="disk-header">
                 <span class="disk-label">Storage</span>
-                <span class="disk-values" id="diskValues">— GB used · — GB free</span>
+                <span class="disk-values" id="diskValues">&#8212; GB used &middot; &#8212; GB free</span>
             </div>
             <div class="progress-track"><div class="progress-fill" id="diskBar"></div></div>
         </div>
         <div class="net-list" id="netList">
-            <div class="net-row"><span class="net-iface">—</span><span class="net-ip">Loading…</span></div>
+            <div class="net-row"><span class="net-iface">&#8212;</span><span class="net-ip">Loading&hellip;</span></div>
         </div>
     </div>
 
@@ -249,7 +249,7 @@
 <script>
     let isLoading=false, hlsInstance=null, streamActive=false;
     let startAbortController=null, isRecording=false;
-    let recordingsLoaded=false, streamInfoVisible=false;
+    let streamInfoVisible=false;
 
     const video   = document.getElementById('liveVideo');
     const wrapper = document.getElementById('videoWrapper');
@@ -293,7 +293,7 @@
         if(streamInfoVisible&&streamActive) fetchStreamInfo();
     }
     async function fetchStreamInfo() {
-        try { const d=await (await fetch('/api/stream/info')).json(); document.getElementById('infoFps').textContent=d.fps||'—'; document.getElementById('infoResolution').textContent=d.resolution||'—'; } catch(e){}
+        try { const d=await (await fetch('/api/stream/info')).json(); document.getElementById('infoFps').textContent=d.fps||'\u2014'; document.getElementById('infoResolution').textContent=d.resolution||'\u2014'; } catch(e){}
     }
 
     /* Overlays */
@@ -304,7 +304,7 @@
         document.getElementById('errorOverlay').style.display   = name==='error'   ?'flex':'none';
     }
     function setStreamUI(state) {
-        if      (state==='off')      { streamActive=false; showOverlay('idle');    document.getElementById('infoFps').textContent='—'; document.getElementById('infoResolution').textContent='—'; }
+        if      (state==='off')      { streamActive=false; showOverlay('idle');    document.getElementById('infoFps').textContent='\u2014'; document.getElementById('infoResolution').textContent='\u2014'; }
         else if (state==='starting') showOverlay('loading');
         else if (state==='on')       { streamActive=true;  showOverlay('live');    if(streamInfoVisible) fetchStreamInfo(); }
         else if (state==='stopping') showOverlay('live');
@@ -357,12 +357,13 @@
     function setRecordingUI(r){ isRecording=r; const btn=document.getElementById('recordBtn'); btn.textContent=r?'Stop':'Start'; btn.classList.toggle('is-recording',r); }
     async function toggleRecording() {
         const btn=document.getElementById('recordBtn'),lbl=document.getElementById('recordStatusLabel');
-        btn.disabled=true; lbl.style.color='#8e8e93'; lbl.textContent=isRecording?'Stopping…':'Starting…';
+        btn.disabled=true; lbl.style.color='#8e8e93'; lbl.textContent=isRecording?'Stopping\u2026':'Starting\u2026';
         try {
             const d=await (await fetch(isRecording?'/api/recording/stop':'/api/recording/start',{method:'POST'})).json();
             if(d.status==='started'||d.status==='stopped'){
                 setRecordingUI(d.status==='started'); lbl.style.color='#34c759'; lbl.textContent=d.status==='started'?'\u2714 Started':'\u2714 Stopped';
-                if(d.status==='stopped') setTimeout(loadRecordings,2000);
+                // Refresh list after a short delay to let the file be written
+                if(d.status==='stopped') setTimeout(loadRecordings, 2500);
             } else { lbl.style.color='#ff3b30'; lbl.textContent='\u26a0 '+(d.message||'Error'); }
         } catch(e){ lbl.style.color='#ff3b30'; lbl.textContent='\u26a0 Failed'; }
         btn.disabled=false; setTimeout(()=>{lbl.textContent='';},4000);
@@ -371,7 +372,7 @@
     /* Wake */
     async function wakePC() {
         const btn=document.getElementById('wolBtn'),lbl=document.getElementById('wolStatusLabel');
-        btn.disabled=true; lbl.style.color='#8e8e93'; lbl.textContent='Sending…';
+        btn.disabled=true; lbl.style.color='#8e8e93'; lbl.textContent='Sending\u2026';
         try { const d=await (await fetch('/api/wol',{method:'POST'})).json(); lbl.style.color=d.status==='sent'?'#34c759':'#ff3b30'; lbl.textContent=d.status==='sent'?'\u2714 Sent':'\u26a0 '+d.message; }
         catch(e){ lbl.style.color='#ff3b30'; lbl.textContent='\u26a0 Failed'; }
         setTimeout(()=>{btn.disabled=false;lbl.textContent='';},5000);
@@ -380,7 +381,7 @@
     /* Sleep */
     async function sleepPC() {
         const btn=document.getElementById('sleepBtn'),lbl=document.getElementById('wolStatusLabel');
-        btn.disabled=true; lbl.style.color='#8e8e93'; lbl.textContent='Sending…';
+        btn.disabled=true; lbl.style.color='#8e8e93'; lbl.textContent='Sending\u2026';
         try { const d=await (await fetch('/api/sleep',{method:'POST'})).json(); lbl.style.color=d.status==='sent'?'#34c759':'#ff3b30'; lbl.textContent=d.status==='sent'?'\u2714 Sent':'\u26a0 '+d.message; }
         catch(e){ lbl.style.color='#ff3b30'; lbl.textContent='\u26a0 Failed'; }
         setTimeout(()=>{btn.disabled=false;lbl.textContent='';},5000);
@@ -388,10 +389,10 @@
 
     /* Delete */
     async function deleteRecording(filename,rowEl) {
-        if(!confirm(`Delete ${filename}?`)) return;
+        if(!confirm('Delete '+filename+'?')) return;
         rowEl.classList.add('deleting');
         try {
-            const d=await (await fetch(`/api/delete/${encodeURIComponent(filename)}`,{method:'DELETE'})).json();
+            const d=await (await fetch('/api/delete/'+encodeURIComponent(filename),{method:'DELETE'})).json();
             if(d.status==='deleted'){
                 rowEl.style.transition='opacity .25s,max-height .3s,padding .3s'; rowEl.style.maxHeight=rowEl.offsetHeight+'px';
                 requestAnimationFrame(()=>{ rowEl.style.opacity='0'; rowEl.style.maxHeight='0'; rowEl.style.padding='0'; rowEl.style.overflow='hidden'; });
@@ -400,27 +401,37 @@
         } catch(e){ rowEl.classList.remove('deleting'); alert('Delete failed: '+e.message); }
     }
 
-    /* Recordings */
+    /* Recordings — always re-entrant, isLoading released in finally */
     async function loadRecordings() {
-        if(isLoading) return; isLoading=true;
+        if(isLoading) return;
+        isLoading=true;
         const c=document.getElementById('recordingsContainer');
         try {
             const res=await fetch('/api/recordings');
-            if(!res.ok) throw new Error(`HTTP ${res.status}`);
+            if(!res.ok) throw new Error('HTTP '+res.status);
             const recs=await res.json();
-            if(!recs||recs.length===0){ c.innerHTML='<div class="state-msg">No recordings yet</div>'; return; }
-            c.innerHTML=recs.map(r=>`
-                <div class="recording-item" data-filename="${r.filename}">
-                    <span class="recording-info">${r.display_name}</span>
-                    <div class="recording-actions">
-                        <a href="/api/play/${r.filename}" target="_blank" class="rec-action-btn" title="Play">&#9654;</a>
-                        <a href="/api/download/${r.filename}" class="rec-action-btn" title="Download">&#8595;</a>
-                        <button class="rec-action-btn delete-btn" title="Delete" onclick="deleteRecording('${r.filename}',this.closest('.recording-item'))">&#128465;</button>
-                    </div>
-                </div>`).join('');
-            recordingsLoaded=true;
-        } catch(e){ c.innerHTML=`<div class="state-msg error">Error: ${e.message}</div>`; }
-        finally{ isLoading=false; }
+            if(!Array.isArray(recs)) throw new Error('Unexpected response');
+            if(recs.length===0){
+                c.innerHTML='<div class="state-msg">No recordings yet</div>';
+                return;
+            }
+            c.innerHTML=recs.map(r=>{
+                const fn=r.filename;
+                const dn=r.display_name||fn;
+                return '<div class="recording-item" data-filename="'+fn+'">'+
+                    '<span class="recording-info">'+dn+'</span>'+
+                    '<div class="recording-actions">'+
+                    '<a href="/api/play/'+fn+'" target="_blank" class="rec-action-btn" title="Play">&#9654;</a>'+
+                    '<a href="/api/download/'+fn+'" class="rec-action-btn" title="Download">&#8595;</a>'+
+                    '<button class="rec-action-btn delete-btn" title="Delete" onclick="deleteRecording(\''+fn+'\',this.closest(\'.recording-item\'))">&#128465;</button>'+
+                    '</div></div>';
+            }).join('');
+        } catch(e){
+            c.innerHTML='<div class="state-msg error">Error: '+e.message+'</div>';
+        } finally {
+            // Always release the lock so the next call can proceed
+            isLoading=false;
+        }
     }
 
     /* Status */
@@ -434,30 +445,22 @@
             setRecordingUI(active);
             if(d.disk_usage){
                 const {percent:p,used,free,total}=d.disk_usage;
-                document.getElementById('diskValues').textContent=`${(used/1e9).toFixed(1)} GB used \u00b7 ${(free/1e9).toFixed(1)} GB free of ${(total/1e9).toFixed(1)} GB`;
+                document.getElementById('diskValues').textContent=(used/1e9).toFixed(1)+' GB used \u00b7 '+(free/1e9).toFixed(1)+' GB free of '+(total/1e9).toFixed(1)+' GB';
                 const bar=document.getElementById('diskBar'); bar.style.width=Math.round(p)+'%'; bar.className='progress-fill'+(p>=90?' crit':p>=75?' warn':'');
             }
             const nl=document.getElementById('netList');
             nl.innerHTML=(d.network_interfaces&&d.network_interfaces.length)
-                ?d.network_interfaces.map(n=>`<div class="net-row"><span class="net-iface">${n.interface}</span><span class="net-ip">${n.ip}</span></div>`).join('')
+                ?d.network_interfaces.map(n=>'<div class="net-row"><span class="net-iface">'+n.interface+'</span><span class="net-ip">'+n.ip+'</span></div>').join('')
                 :'<div class="net-row"><span class="net-iface">\u2014</span><span class="net-ip">No interfaces</span></div>';
         } catch { document.getElementById('connectionDot').className='dot off'; document.getElementById('connectionText').textContent='Disconnected'; }
     }
 
-    /* Lazy-load recordings */
-    function setupRecordingsLazyLoad() {
-        const card=document.getElementById('recordingsCard');
-        if(!('IntersectionObserver' in window)){ loadRecordings(); return; }
-        const obs=new IntersectionObserver(entries=>{ entries.forEach(e=>{ if(e.isIntersecting&&!recordingsLoaded){ loadRecordings(); if(recordingsLoaded) obs.disconnect(); } }); },{rootMargin:'200px'});
-        obs.observe(card);
-    }
-
-    showOverlay('idle');
-    window.addEventListener('load',()=>{
+    window.addEventListener('load', () => {
         updateStatus();
-        setupRecordingsLazyLoad();
-        setInterval(updateStatus,30000);
-        setInterval(()=>{ if(recordingsLoaded) loadRecordings(); },300000);
+        loadRecordings();
+        setInterval(updateStatus,  30000);
+        // Refresh recordings list every 10s when the tab is visible
+        setInterval(() => { if(!document.hidden) loadRecordings(); }, 10000);
     });
 </script>
 </body>
