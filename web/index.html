@@ -57,9 +57,7 @@
             display: flex; align-items: center; justify-content: center;
             opacity: 0; transition: opacity 0.2s, background 0.15s, transform 0.1s;
         }
-        /* Show on hover (desktop) */
         .video-wrapper:hover .fs-btn { opacity: 1; }
-        /* Always visible on touch devices */
         @media (hover: none) { .fs-btn { opacity: 1; bottom: 10px; } }
         .fs-btn:hover  { background: rgba(0,0,0,0.65); }
         .fs-btn:active { transform: scale(0.92); }
@@ -98,8 +96,10 @@
         .action-pill-btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 18px; border-radius: 99px; font-size: 14px; font-weight: 600; cursor: pointer; letter-spacing: -0.01em; white-space: nowrap; transition: background 0.18s, color 0.18s, opacity 0.18s, transform 0.1s; }
         .action-pill-btn:active   { transform: scale(0.96); }
         .action-pill-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
-        #wolBtn { border: 1.5px solid #6e6cff; background: transparent; color: #6e6cff; }
-        #wolBtn:hover:not(:disabled) { background: #6e6cff; color: white; }
+        #wolBtn   { border: 1.5px solid #6e6cff; background: transparent; color: #6e6cff; }
+        #wolBtn:hover:not(:disabled)   { background: #6e6cff; color: white; }
+        #sleepBtn { border: 1.5px solid #ff9f0a; background: transparent; color: #ff9f0a; }
+        #sleepBtn:hover:not(:disabled) { background: #ff9f0a; color: white; }
         #recordBtn { border: 1.5px solid #ff3b30; background: transparent; color: #ff3b30; }
         #recordBtn:hover:not(:disabled) { background: #ff3b30; color: white; }
         #recordBtn.is-recording { border-color: #8e8e93; color: #8e8e93; }
@@ -163,13 +163,11 @@
 
     <div class="live-block">
         <div class="video-wrapper" id="videoWrapper">
-            <!-- controls kept; fs-btn sits above the controls bar on desktop, beside them on mobile -->
             <video id="liveVideo" autoplay muted playsinline controls></video>
 
             <div class="live-badge">Live</div>
             <div class="video-clock"><div class="clock-time" id="clockTime">--:--:--</div></div>
 
-            <!-- Fullscreen button overlay -->
             <button class="fs-btn" id="fsBtn" title="Fullscreen">
                 <svg id="fsExpand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
@@ -226,6 +224,7 @@
         <div class="card-header"><span class="card-title">Christopher's Desktop</span></div>
         <div class="card-body">
             <button id="wolBtn" class="action-pill-btn" onclick="wakePC()">Wake</button>
+            <button id="sleepBtn" class="action-pill-btn" onclick="sleepPC()">Sleep</button>
             <span id="wolStatusLabel" class="status-label"></span>
         </div>
     </div>
@@ -265,16 +264,10 @@
     }
     setInterval(updateClock,1000); updateClock();
 
-    /* Fullscreen
-       - Desktop / Android: fullscreen the wrapper so clock travels along
-       - iOS Safari: only video.webkitEnterFullscreen() works on mobile Safari  */
+    /* Fullscreen */
     document.getElementById('fsBtn').addEventListener('click', () => {
         const inFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
-        if (inFS) {
-            (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-            return;
-        }
-        // iOS Safari: requestFullscreen on a div is not supported
+        if (inFS) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
         if (video.webkitSupportsFullscreen && !wrapper.requestFullscreen) {
             video.webkitEnterFullscreen();
         } else {
@@ -282,7 +275,6 @@
             if (req) req.call(wrapper);
         }
     });
-
     function onFSChange() {
         const inFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
         document.getElementById('fsExpand').style.display   = inFS ? 'none'  : 'block';
@@ -290,7 +282,6 @@
     }
     document.addEventListener('fullscreenchange',       onFSChange);
     document.addEventListener('webkitfullscreenchange', onFSChange);
-    // iOS fires webkitbeginfullscreen / webkitendfullscreen on the video element
     video.addEventListener('webkitbeginfullscreen', () => { document.getElementById('fsExpand').style.display='none';  document.getElementById('fsCompress').style.display='block'; });
     video.addEventListener('webkitendfullscreen',   () => { document.getElementById('fsExpand').style.display='block'; document.getElementById('fsCompress').style.display='none';  });
 
@@ -377,11 +368,20 @@
         btn.disabled=false; setTimeout(()=>{lbl.textContent='';},4000);
     }
 
-    /* WOL */
+    /* Wake */
     async function wakePC() {
         const btn=document.getElementById('wolBtn'),lbl=document.getElementById('wolStatusLabel');
         btn.disabled=true; lbl.style.color='#8e8e93'; lbl.textContent='Sending…';
         try { const d=await (await fetch('/api/wol',{method:'POST'})).json(); lbl.style.color=d.status==='sent'?'#34c759':'#ff3b30'; lbl.textContent=d.status==='sent'?'\u2714 Sent':'\u26a0 '+d.message; }
+        catch(e){ lbl.style.color='#ff3b30'; lbl.textContent='\u26a0 Failed'; }
+        setTimeout(()=>{btn.disabled=false;lbl.textContent='';},5000);
+    }
+
+    /* Sleep */
+    async function sleepPC() {
+        const btn=document.getElementById('sleepBtn'),lbl=document.getElementById('wolStatusLabel');
+        btn.disabled=true; lbl.style.color='#8e8e93'; lbl.textContent='Sending…';
+        try { const d=await (await fetch('/api/sleep',{method:'POST'})).json(); lbl.style.color=d.status==='sent'?'#34c759':'#ff3b30'; lbl.textContent=d.status==='sent'?'\u2714 Sent':'\u26a0 '+d.message; }
         catch(e){ lbl.style.color='#ff3b30'; lbl.textContent='\u26a0 Failed'; }
         setTimeout(()=>{btn.disabled=false;lbl.textContent='';},5000);
     }

@@ -159,7 +159,7 @@ def hls_files(filename):
     return send_from_directory(HLS_DIR, filename)
 
 
-# ── Recording control ──────────────────────────────────────────────────────────
+# -- Recording control ---------------------------------------------------------
 
 @app.route("/api/recording/start", methods=["POST"])
 def recording_start():
@@ -190,7 +190,7 @@ def recording_stop():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# ──────────────────────────────────────────────────────────────────────────────
+# ------------------------------------------------------------------------------
 
 
 @app.route("/api/delete/<filename>", methods=["DELETE"])
@@ -220,6 +220,24 @@ def wake_on_lan():
         )
         if result.returncode == 0:
             return jsonify({"status": "sent", "message": "Magic packet sent to gaming PC"})
+        else:
+            return jsonify({"status": "error", "message": result.stderr.strip()}), 500
+    except FileNotFoundError:
+        return jsonify({"status": "error", "message": "wakeonlan not installed on server"}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/sleep", methods=["POST"])
+def sleep_pc():
+    """Send a magic packet with the reversed MAC to trigger sleep on the PC."""
+    try:
+        result = subprocess.run(
+            ["wakeonlan", "-i", "10.0.0.255", "2E:F8:FF:D3:5E:D8"],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode == 0:
+            return jsonify({"status": "sent", "message": "Sleep packet sent to gaming PC"})
         else:
             return jsonify({"status": "error", "message": result.stderr.strip()}), 500
     except FileNotFoundError:
