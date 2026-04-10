@@ -5,6 +5,7 @@ import subprocess
 import threading
 import signal
 import shutil
+from datetime import datetime
 
 
 class CameraRecorder:
@@ -109,7 +110,7 @@ class CameraRecorder:
     def record_continuous(self, output_file):
         cmd = [
             "ffmpeg",
-            "-y",
+            # No -y: never overwrite an existing file
             "-rtsp_transport",
             "tcp",
             "-buffer_size",
@@ -163,20 +164,16 @@ class CameraRecorder:
         finally:
             self.current_process = None
 
-    def get_next_recording_number(self):
-        existing_files = []
-        try:
-            for f in os.listdir(self.recordings_dir):
-                if f.endswith(".mp4") and f.startswith("recording_"):
-                    try:
-                        num = int(f.replace("recording_", "").replace(".mp4", ""))
-                        existing_files.append(num)
-                    except ValueError:
-                        continue
-        except FileNotFoundError:
-            pass
-
-        return max(existing_files) + 1 if existing_files else 1
+    def get_output_filename(self):
+        """Generate a unique timestamped filename — can never collide."""
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        path = os.path.join(self.recordings_dir, f"recording_{ts}.mp4")
+        # Extremely unlikely, but guarantee uniqueness with a suffix
+        suffix = 0
+        while os.path.exists(path):
+            suffix += 1
+            path = os.path.join(self.recordings_dir, f"recording_{ts}_{suffix}.mp4")
+        return path
 
     def _monitor_disk_usage(self):
         self.logger.info("Starting background disk monitor.")
@@ -194,10 +191,7 @@ class CameraRecorder:
         disk_monitor_thread.start()
 
         while self.running:
-            recording_num = self.get_next_recording_number()
-            output_file = os.path.join(
-                self.recordings_dir, f"recording_{recording_num}.mp4"
-            )
+            output_file = self.get_output_filename()
 
             self.logger.info(f"Starting recording session for: {output_file}")
 
