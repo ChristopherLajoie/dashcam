@@ -94,7 +94,6 @@ def probe_stream_info():
                 width  = stream.get("width", 0)
                 height = stream.get("height", 0)
 
-                # fps is stored as a fraction e.g. "15/1" or "30000/1001"
                 fps_raw = stream.get("r_frame_rate", "0/1")
                 num, den = fps_raw.split("/")
                 fps = round(int(num) / int(den), 1) if int(den) else 0
@@ -195,11 +194,9 @@ def recording_stop():
 
 @app.route("/api/delete/<filename>", methods=["DELETE"])
 def delete_recording(filename):
-    # Safety: only allow .mp4 files that match the expected naming pattern
     if not filename.endswith(".mp4") or not filename.startswith("recording_"):
         return jsonify({"status": "error", "message": "Invalid filename"}), 400
     file_path = os.path.join(RECORDINGS_DIR, filename)
-    # Prevent path traversal
     if not os.path.abspath(file_path).startswith(os.path.abspath(RECORDINGS_DIR)):
         return jsonify({"status": "error", "message": "Access denied"}), 403
     if not os.path.exists(file_path):
@@ -230,7 +227,6 @@ def wake_on_lan():
 
 @app.route("/api/sleep", methods=["POST"])
 def sleep_pc():
-    """Send a magic packet with the reversed MAC to trigger sleep on the PC."""
     try:
         result = subprocess.run(
             ["wakeonlan", "-i", "10.0.0.255", "2E:F8:FF:D3:5E:D8"],
@@ -283,17 +279,6 @@ def debug_recordings():
                 files = [f for f in os.listdir(RECORDINGS_DIR) if f.endswith(".mp4")]
                 debug_info["recording_files"] = files
                 debug_info["num_recordings"]  = len(files)
-                metadata_file = os.path.join(RECORDINGS_DIR, "recordings.json")
-                debug_info["metadata_exists"] = os.path.exists(metadata_file)
-                if os.path.exists(metadata_file):
-                    try:
-                        with open(metadata_file, "r") as f:
-                            metadata = json.load(f)
-                        debug_info["metadata_valid"] = True
-                        debug_info["metadata_keys"]  = list(metadata.keys())
-                    except Exception as e:
-                        debug_info["metadata_valid"] = False
-                        debug_info["metadata_error"] = str(e)
             except Exception as e:
                 debug_info["listdir_error"] = str(e)
         return jsonify(debug_info)
@@ -321,39 +306,55 @@ def get_video_duration(file_path):
         return "Unknown"
 
 
+def parse_recording_display_name(filename, duration):
+    """
+    Build a human-readable name from the filename.
+    Supports:
+      recording_YYYYMMDD_HHMMSS.mp4
+      recording_YYYYMMDD_HHMMSS_N.mp4  (collision suffix)
+    Falls back gracefully for old numeric filenames.
+    """
+    stem = filename.replace(".mp4", "").replace("recording_", "")
+    parts = stem.split("_")
+    if len(parts) >= 2 and len(parts[0]) == 8 and len(parts[1]) == 6:
+        try:
+            dt = datetime.strptime(f"{parts[0]}_{parts[1]}", "%Y%m%d_%H%M%S")
+            label = dt.strftime("%b %d, %Y \u2014 %H:%M:%S")
+            return f"{label}  \u00b7  {duration}"
+        except ValueError:
+            pass
+    # Fallback for old numeric names like recording_1.mp4
+    return f"Recording {stem}  \u00b7  {duration}"
+
+
 @app.route("/api/recordings")
 def get_recordings():
-    all_recordings = []
     try:
         if not os.path.exists(RECORDINGS_DIR):
             return jsonify([])
-        try:
-            for f in os.listdir(RECORDINGS_DIR):
-                if f.endswith(".mp4") and f.startswith("recording_"):
-                    file_path = os.path.join(RECORDINGS_DIR, f)
-                    if os.path.exists(file_path):
-                        duration = get_video_duration(file_path)
-                        recording_num = 0
-                        try:
-                            recording_num = int(f.replace("recording_", "").replace(".mp4", ""))
-                        except ValueError:
-                            recording_num = 0
-                        all_recordings.append({
-                            "filename":     f,
-                            "duration":     duration,
-                            "recording_num": recording_num,
-                        })
-        except Exception:
-            return jsonify([])
 
-        all_recordings.sort(key=lambda x: x["recording_num"], reverse=True)
-        recordings_list = []
-        for i, rec in enumerate(all_recordings):
-            recordings_list.append({
+        all_recordings = []
+        for f in os.listdir(RECORDINGS_DIR):
+            if not (f.endswith(".mp4") and f.startswith("recording_")):
+                continue
+            file_path = os.path.join(RECORDINGS_DIR, f)
+            if not os.path.exists(file_path):
+                continue
+            mtime = os.path.getmtime(file_path)
+            all_recordings.append({"filename": f, "mtime": mtime})
+
+        # Newest first
+        all_recordings.sort(key=lambda x: x["mtime"], reverse=True)
+
+        result = []
+        for rec in all_recordings:
+            duration = get_video_duration(os.path.join(RECORDINGS_DIR, rec["filename"]))
+            result.append({
                 "filename":     rec["filename"],
-                "display_name": f"Recording #{i+1} - {rec['duration']}",
+                "display_name": parse_recording_display_name(rec["filename"], duration),
             })
-        return jsonify(recordings_list)
+        return jsonify(result)
+
     except Exception as e:
         print(f"ERROR in get_recordings: {e}")
         import traceback
@@ -381,7 +382,6 @@ def play_recording(filename):
 def get_status():
     import psutil
 
-    # Disk
     try:
         usage = psutil.disk_usage(RECORDINGS_DIR)
         disk_usage = {
@@ -393,7 +393,6 @@ def get_status():
     except Exception:
         disk_usage = {"total": 0, "used": 0, "free": 0, "percent": 0}
 
-    # Recording service
     recording_status = "unknown"
     try:
         result = subprocess.run(
@@ -404,7 +403,6 @@ def get_status():
     except Exception:
         pass
 
-    # Network — collect all non-loopback IPv4 addresses with their interface names
     network_interfaces = []
     try:
         for iface, addrs in psutil.net_if_addrs().items():
@@ -417,10 +415,10 @@ def get_status():
         pass
 
     return jsonify({
-        "disk_usage":          disk_usage,
-        "recording_status":    recording_status,
-        "network_interfaces":  network_interfaces,
-        "timestamp":           datetime.now().isoformat(),
+        "disk_usage":         disk_usage,
+        "recording_status":   recording_status,
+        "network_interfaces": network_interfaces,
+        "timestamp":          datetime.now().isoformat(),
     })
 
 
