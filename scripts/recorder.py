@@ -110,7 +110,7 @@ class CameraRecorder:
     def record_continuous(self, output_file):
         cmd = [
             "ffmpeg",
-            # No -y: never overwrite an existing file
+            # No -y: never silently overwrite an existing file
             "-rtsp_transport",
             "tcp",
             "-buffer_size",
@@ -141,20 +141,29 @@ class CameraRecorder:
             )
 
             _, stderr_output = self.current_process.communicate()
+            rc = self.current_process.returncode
 
-            if self.running and self.current_process.returncode != 0:
+            # A graceful stop (SIGINT/SIGTERM) causes ffmpeg to exit with a
+            # non-zero code.  That is expected — don't treat it as a failure.
+            # Only flag as failure when we're still supposed to be running AND
+            # ffmpeg quit on its own with an error.
+            if self.running and rc != 0:
                 self.logger.error(
-                    f"FFmpeg process exited unexpectedly with code {self.current_process.returncode}"
+                    f"FFmpeg exited unexpectedly with code {rc}"
                 )
                 self.logger.error(f"FFmpeg stderr: {stderr_output}")
+                # Clean up empty/corrupt file
+                if os.path.exists(output_file) and os.path.getsize(output_file) == 0:
+                    os.remove(output_file)
                 return False
 
+            # Keep the file if it has content, regardless of exit code
             if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
-                self.logger.info(f"Recording completed: {output_file}")
+                self.logger.info(f"Recording saved: {output_file}")
                 return True
             else:
                 self.logger.warning(
-                    f"Recording file is empty or missing after process ended: {output_file}"
+                    f"Recording file is empty or missing: {output_file}"
                 )
                 return False
 
@@ -168,7 +177,6 @@ class CameraRecorder:
         """Generate a unique timestamped filename — can never collide."""
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         path = os.path.join(self.recordings_dir, f"recording_{ts}.mp4")
-        # Extremely unlikely, but guarantee uniqueness with a suffix
         suffix = 0
         while os.path.exists(path):
             suffix += 1
@@ -192,17 +200,17 @@ class CameraRecorder:
 
         while self.running:
             output_file = self.get_output_filename()
-
-            self.logger.info(f"Starting recording session for: {output_file}")
+            self.logger.info(f"Starting recording session: {output_file}")
 
             success = self.record_continuous(output_file)
 
             if not success and self.running:
                 self.logger.warning(
-                    "Recording process failed. Retrying in 30 seconds..."
+                    "Recording failed. Retrying in 30 seconds..."
                 )
                 time.sleep(30)
             else:
+                # Either stopped gracefully or succeeded — exit the loop
                 break
 
         self.logger.info("Camera recorder session ended")
