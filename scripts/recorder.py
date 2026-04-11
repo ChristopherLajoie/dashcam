@@ -15,8 +15,10 @@ class CameraRecorder:
         self.logs_dir = f"{self.base_dir}/logs"
         self.rtsp_url = "rtsp://192.168.1.18:554/1/h264major"
         self.max_disk_usage = 80
+        self.min_recordings_to_keep = 5
         self.running = False
         self.current_process = None
+        self.current_output_file = None  # Track active recording so cleanup never deletes it
 
         os.makedirs(self.logs_dir, exist_ok=True)
         logging.basicConfig(
@@ -55,56 +57,58 @@ class CameraRecorder:
             return 100
 
     def cleanup_old_files(self):
-        current_usage = self.get_disk_usage()
-        if current_usage > self.max_disk_usage:
-            self.logger.info(
-                f"Disk usage {current_usage:.2f}% is above threshold ({self.max_disk_usage}%). Cleaning up old files..."
-            )
+        if self.get_disk_usage() <= self.max_disk_usage:
+            return
+
+        self.logger.info(
+            f"Disk usage above {self.max_disk_usage}%. Cleaning up old recordings..."
+        )
 
         while self.get_disk_usage() > self.max_disk_usage:
-            oldest_file = None
-            oldest_time = float("inf")
-
             try:
                 files_in_dir = os.listdir(self.recordings_dir)
             except FileNotFoundError:
-                self.logger.error(
-                    f"Cannot list files, directory not found: {self.recordings_dir}"
+                self.logger.error(f"Cannot list files: {self.recordings_dir}")
+                break
+
+            # Collect completed (non-empty) recordings, never touch the active file
+            candidates = []
+            for item in files_in_dir:
+                if not item.endswith(".mp4"):
+                    continue
+                item_path = os.path.join(self.recordings_dir, item)
+                try:
+                    # Skip the file currently being recorded
+                    if self.current_output_file and os.path.abspath(item_path) == os.path.abspath(self.current_output_file):
+                        continue
+                    size = os.path.getsize(item_path)
+                    if size == 0:
+                        self.logger.info(f"Removing zero-byte file: {item_path}")
+                        os.remove(item_path)
+                        continue
+                    candidates.append((os.path.getmtime(item_path), item_path))
+                except FileNotFoundError:
+                    continue
+
+            # Always keep a minimum number of recordings
+            if len(candidates) <= self.min_recordings_to_keep:
+                self.logger.info(
+                    f"Keeping minimum {self.min_recordings_to_keep} recordings; "
+                    f"disk still at {self.get_disk_usage():.1f}%"
                 )
                 break
 
-            for item in files_in_dir:
-                if item.endswith(".mp4"):
-                    item_path = os.path.join(self.recordings_dir, item)
-                    try:
-                        if os.path.getsize(item_path) == 0:
-                            self.logger.info(f"Removing zero-byte file: {item_path}")
-                            os.remove(item_path)
-                            continue
-
-                        mtime = os.path.getmtime(item_path)
-                        if mtime < oldest_time:
-                            oldest_time = mtime
-                            oldest_file = item_path
-                    except FileNotFoundError:
-                        continue
-
-            if oldest_file:
-                try:
-                    self.logger.info(
-                        f"Removing old recording: {oldest_file} to free up space."
-                    )
-                    os.remove(oldest_file)
-                    time.sleep(1)
-                except FileNotFoundError:
-                    self.logger.warning(
-                        f"Could not delete {oldest_file} as it was already removed."
-                    )
-                except Exception as e:
-                    self.logger.error(f"Error removing file {oldest_file}: {e}")
-                    break
-            else:
-                self.logger.info("No more files to remove.")
+            # Delete the oldest
+            candidates.sort()
+            oldest_path = candidates[0][1]
+            try:
+                self.logger.info(f"Removing old recording: {oldest_path}")
+                os.remove(oldest_path)
+                time.sleep(1)
+            except FileNotFoundError:
+                self.logger.warning(f"Already removed: {oldest_path}")
+            except Exception as e:
+                self.logger.error(f"Error removing {oldest_path}: {e}")
                 break
 
     def record_continuous(self, output_file):
@@ -131,6 +135,7 @@ class CameraRecorder:
         ]
 
         self.logger.info(f"Starting continuous recording: {' '.join(cmd)}")
+        self.current_output_file = output_file
 
         try:
             self.current_process = subprocess.Popen(
@@ -178,6 +183,7 @@ class CameraRecorder:
             return False
         finally:
             self.current_process = None
+            self.current_output_file = None
 
     def get_output_filename(self):
         """Generate a unique timestamped filename — can never collide."""
