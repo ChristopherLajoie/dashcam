@@ -310,8 +310,9 @@ def parse_recording_display_name(filename, duration):
     """
     Build a human-readable name from the filename.
     Supports:
-      recording_YYYYMMDD_HHMMSS.mp4
-      recording_YYYYMMDD_HHMMSS_N.mp4  (collision suffix)
+      recording_YYYYMMDD_HHMMSS_microseconds.mp4
+      recording_YYYYMMDD_HHMMSS_microseconds_N.mp4  (collision suffix)
+      recording_YYYYMMDD_HHMMSS.mp4  (legacy, no microseconds)
     Falls back gracefully for old numeric filenames.
     """
     stem = filename.replace(".mp4", "").replace("recording_", "")

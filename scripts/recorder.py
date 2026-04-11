@@ -162,6 +162,12 @@ class CameraRecorder:
                 self.logger.info(f"Recording saved: {output_file}")
                 return True
             else:
+                # Clean up empty file regardless of how we got here
+                if os.path.exists(output_file):
+                    try:
+                        os.remove(output_file)
+                    except OSError:
+                        pass
                 self.logger.warning(
                     f"Recording file is empty or missing: {output_file}"
                 )
@@ -175,7 +181,7 @@ class CameraRecorder:
 
     def get_output_filename(self):
         """Generate a unique timestamped filename — can never collide."""
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         path = os.path.join(self.recordings_dir, f"recording_{ts}.mp4")
         suffix = 0
         while os.path.exists(path):
