@@ -164,7 +164,7 @@ def hls_files(filename):
 def recording_start():
     try:
         result = subprocess.run(
-            ["systemctl", "start", "ipcamera-recorder.service"],
+            ["sudo", "systemctl", "start", "ipcamera-recorder.service"],
             capture_output=True, text=True, timeout=10
         )
         if result.returncode == 0:
@@ -179,7 +179,7 @@ def recording_start():
 def recording_stop():
     try:
         result = subprocess.run(
-            ["systemctl", "stop", "ipcamera-recorder.service"],
+            ["sudo", "systemctl", "stop", "ipcamera-recorder.service"],
             capture_output=True, text=True, timeout=15
         )
         if result.returncode == 0:
@@ -198,7 +198,7 @@ def recording_stop():
 def motion_enable():
     try:
         result = subprocess.run(
-            ["systemctl", "start", "ipcamera-motion.service"],
+            ["sudo", "systemctl", "start", "ipcamera-motion.service"],
             capture_output=True, text=True, timeout=10
         )
         if result.returncode == 0:
@@ -212,7 +212,7 @@ def motion_enable():
 def motion_disable():
     try:
         result = subprocess.run(
-            ["systemctl", "stop", "ipcamera-motion.service"],
+            ["sudo", "systemctl", "stop", "ipcamera-motion.service"],
             capture_output=True, text=True, timeout=15
         )
         if result.returncode == 0:
