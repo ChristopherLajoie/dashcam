@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Motion detector — samples frames from the RTSP stream, uses MOG2 background
-subtraction to detect motion, and sends a push notification via ntfy.sh when
-movement exceeds the area threshold.
+subtraction to detect motion, sends a push notification via ntfy.sh, and
+records a short clip to the recordings directory when motion is detected.
 
 Setup:
     pip install opencv-python-headless requests
@@ -16,6 +16,8 @@ Run as a service: see /etc/systemd/system/ipcamera-motion.service
 import logging
 import os
 import signal
+import subprocess
+import threading
 import time
 from datetime import datetime
 
@@ -29,7 +31,9 @@ SAMPLE_INTERVAL    = 2            # seconds between frame grabs
 MIN_CONTOUR_AREA   = 3000         # px² — raise to reduce sensitivity (wind, leaves)
 NTFY_TOPIC         = "ipcamera-motion"
 NTFY_URL           = f"https://ntfy.sh/{NTFY_TOPIC}"
-COOLDOWN           = 90           # seconds between repeated notifications
+COOLDOWN           = 90           # seconds between repeated notifications/recordings
+CLIP_DURATION      = 30           # seconds to record after motion is detected
+RECORDINGS_DIR     = "/opt/ipcamera/recordings"
 SNAPSHOT_PATH      = "/tmp/motion_snapshot.jpg"
 LOG_FILE           = "/opt/ipcamera/logs/motion_detector.log"
 MOG2_HISTORY       = 500
@@ -39,6 +43,7 @@ WARMUP_FRAMES      = 30
 # ──────────────────────────────────────────────────────────────────────────────
 
 os.makedirs("/opt/ipcamera/logs", exist_ok=True)
+os.makedirs(RECORDINGS_DIR, exist_ok=True)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -50,6 +55,9 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
+_clip_lock = threading.Lock()
+_clip_recording = False
+
 
 def grab_frame(rtsp_url: str):
     cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
@@ -59,6 +67,38 @@ def grab_frame(rtsp_url: str):
     if not ret or frame is None:
         raise RuntimeError("Failed to grab frame from RTSP stream")
     return frame
+
+
+def record_clip():
+    global _clip_recording
+    with _clip_lock:
+        if _clip_recording:
+            log.info("Clip already recording, skipping")
+            return
+        _clip_recording = True
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_path = os.path.join(RECORDINGS_DIR, f"motion_{ts}.mp4")
+    cmd = [
+        "ffmpeg",
+        "-rtsp_transport", "tcp",
+        "-i", RTSP_URL,
+        "-t", str(CLIP_DURATION),
+        "-c:v", "copy",
+        "-an",
+        "-y",
+        out_path,
+    ]
+    try:
+        log.info(f"Recording clip: {out_path}")
+        subprocess.run(cmd, capture_output=True, timeout=CLIP_DURATION + 15)
+        log.info(f"Clip saved: {os.path.basename(out_path)}")
+    except Exception as e:
+        log.error(f"Clip recording failed: {e}")
+    finally:
+        with _clip_lock:
+            global _clip_recording
+            _clip_recording = False
 
 
 def send_notification(area: int, snapshot_path: str):
@@ -165,6 +205,7 @@ def main():
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
                     cv2.imwrite(SNAPSHOT_PATH, annotated)
                     send_notification(largest_area, SNAPSHOT_PATH)
+                    threading.Thread(target=record_clip, daemon=True).start()
                     last_notified = now
                 else:
                     remaining = int(COOLDOWN - (now - last_notified))

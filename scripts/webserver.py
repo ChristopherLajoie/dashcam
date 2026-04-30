@@ -226,7 +226,7 @@ def motion_disable():
 
 @app.route("/api/delete/<filename>", methods=["DELETE"])
 def delete_recording(filename):
-    if not filename.endswith(".mp4") or not filename.startswith("recording_"):
+    if not filename.endswith(".mp4") or not (filename.startswith("recording_") or filename.startswith("motion_")):
         return jsonify({"status": "error", "message": "Invalid filename"}), 400
     file_path = os.path.join(RECORDINGS_DIR, filename)
     if not os.path.abspath(file_path).startswith(os.path.abspath(RECORDINGS_DIR)):
@@ -339,24 +339,19 @@ def get_video_duration(file_path):
 
 
 def parse_recording_display_name(filename, duration):
-    """
-    Build a human-readable name from the filename.
-    Supports:
-      recording_YYYYMMDD_HHMMSS.mp4
-      recording_YYYYMMDD_HHMMSS_N.mp4  (collision suffix)
-    Falls back gracefully for old numeric filenames.
-    """
-    stem = filename.replace(".mp4", "").replace("recording_", "")
+    is_motion = filename.startswith("motion_")
+    prefix = "motion_" if is_motion else "recording_"
+    label_prefix = "Motion" if is_motion else "Recording"
+    stem = filename.replace(".mp4", "").replace(prefix, "")
     parts = stem.split("_")
     if len(parts) >= 2 and len(parts[0]) == 8 and len(parts[1]) == 6:
         try:
             dt = datetime.strptime(f"{parts[0]}_{parts[1]}", "%Y%m%d_%H%M%S")
             label = dt.strftime("%b %d, %Y \u2014 %H:%M:%S")
-            return f"{label}  \u00b7  {duration}"
+            return f"{label_prefix}: {label}  \u00b7  {duration}"
         except ValueError:
             pass
-    # Fallback for old numeric names like recording_1.mp4
-    return f"Recording {stem}  \u00b7  {duration}"
+    return f"{label_prefix} {stem}  \u00b7  {duration}"
 
 
 @app.route("/api/recordings")
@@ -367,7 +362,7 @@ def get_recordings():
 
         all_recordings = []
         for f in os.listdir(RECORDINGS_DIR):
-            if not (f.endswith(".mp4") and f.startswith("recording_")):
+            if not (f.endswith(".mp4") and (f.startswith("recording_") or f.startswith("motion_"))):
                 continue
             file_path = os.path.join(RECORDINGS_DIR, f)
             if not os.path.exists(file_path):
