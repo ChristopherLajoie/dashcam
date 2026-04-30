@@ -97,7 +97,6 @@ def record_clip():
         log.error(f"Clip recording failed: {e}")
     finally:
         with _clip_lock:
-            global _clip_recording
             _clip_recording = False
 
 
