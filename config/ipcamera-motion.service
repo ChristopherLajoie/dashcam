@@ -1,0 +1,19 @@
+[Unit]
+Description=IP Camera Motion Detector
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=foxtrot
+Group=foxtrot
+WorkingDirectory=/opt/ipcamera
+Environment=PATH=/opt/ipcamera/venv/bin:/usr/bin:/bin
+ExecStart=/opt/ipcamera/venv/bin/python3 /opt/ipcamera/scripts/motion_detector.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

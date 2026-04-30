@@ -104,6 +104,10 @@
         #recordBtn:hover:not(:disabled) { background: #ff3b30; color: white; }
         #recordBtn.is-recording { border-color: #8e8e93; color: #8e8e93; }
         #recordBtn.is-recording:hover:not(:disabled) { background: #8e8e93; color: white; }
+        #motionBtn { border: 1.5px solid #ff9f0a; background: transparent; color: #ff9f0a; }
+        #motionBtn:hover:not(:disabled) { background: #ff9f0a; color: white; }
+        #motionBtn.is-active { border-color: #8e8e93; color: #8e8e93; }
+        #motionBtn.is-active:hover:not(:disabled) { background: #8e8e93; color: white; }
         .status-label { font-size: 13px; color: #8e8e93; }
         .card-divider { height: 1px; background: rgba(0,0,0,0.05); margin: 0 20px; }
 
@@ -159,6 +163,7 @@
     <div class="status-bar">
         <div class="pill"><div class="dot" id="connectionDot"></div><span id="connectionText">Connected</span></div>
         <div class="pill"><div class="dot" id="recordingDot"></div><span id="recordingText">Recording</span></div>
+        <div class="pill"><div class="dot off" id="motionDot"></div><span id="motionText">Motion Off</span></div>
     </div>
 
     <div class="live-block">
@@ -221,6 +226,14 @@
     </div>
 
     <div class="card">
+        <div class="card-header"><span class="card-title">Motion Detection</span></div>
+        <div class="card-body">
+            <button id="motionBtn" class="action-pill-btn" onclick="toggleMotion()">Enable</button>
+            <span id="motionStatusLabel" class="status-label"></span>
+        </div>
+    </div>
+
+    <div class="card">
         <div class="card-header"><span class="card-title">Christopher's Desktop</span></div>
         <div class="card-body">
             <button id="wolBtn" class="action-pill-btn" onclick="wakePC()">Wake</button>
@@ -248,7 +261,7 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
     let isLoading=false, hlsInstance=null, streamActive=false;
-    let startAbortController=null, isRecording=false;
+    let startAbortController=null, isRecording=false, isMotionEnabled=false;
     let streamInfoVisible=false;
 
     const video   = document.getElementById('liveVideo');
@@ -369,6 +382,27 @@
         btn.disabled=false; setTimeout(()=>{lbl.textContent='';},4000);
     }
 
+    /* Motion */
+    function setMotionUI(enabled) {
+        isMotionEnabled = enabled;
+        const btn = document.getElementById('motionBtn');
+        btn.textContent = enabled ? 'Disable' : 'Enable';
+        btn.classList.toggle('is-active', enabled);
+        document.getElementById('motionDot').className = enabled ? 'dot recording' : 'dot off';
+        document.getElementById('motionText').textContent = enabled ? 'Motion Active' : 'Motion Off';
+    }
+    async function toggleMotion() {
+        const btn=document.getElementById('motionBtn'), lbl=document.getElementById('motionStatusLabel');
+        btn.disabled=true; lbl.style.color='#8e8e93'; lbl.textContent=isMotionEnabled?'Disabling…':'Enabling…';
+        try {
+            const d=await (await fetch(isMotionEnabled?'/api/motion/disable':'/api/motion/enable',{method:'POST'})).json();
+            if(d.status==='started'||d.status==='stopped'){
+                setMotionUI(d.status==='started'); lbl.style.color='#34c759'; lbl.textContent=d.status==='started'?'✔ Enabled':'✔ Disabled';
+            } else { lbl.style.color='#ff3b30'; lbl.textContent='⚠ '+(d.message||'Error'); }
+        } catch(e){ lbl.style.color='#ff3b30'; lbl.textContent='⚠ Failed'; }
+        btn.disabled=false; setTimeout(()=>{lbl.textContent='';},4000);
+    }
+
     /* Wake */
     async function wakePC() {
         const btn=document.getElementById('wolBtn'),lbl=document.getElementById('wolStatusLabel');
@@ -443,6 +477,7 @@
             document.getElementById('recordingDot').className=active?'dot recording':'dot off';
             document.getElementById('recordingText').textContent=active?'Recording':'Not Recording';
             setRecordingUI(active);
+            setMotionUI(d.motion_status==='active');
             if(d.disk_usage){
                 const {percent:p,used,free,total}=d.disk_usage;
                 document.getElementById('diskValues').textContent=(used/1e9).toFixed(1)+' GB used \u00b7 '+(free/1e9).toFixed(1)+' GB free of '+(total/1e9).toFixed(1)+' GB';

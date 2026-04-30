@@ -192,6 +192,38 @@ def recording_stop():
 # ------------------------------------------------------------------------------
 
 
+# -- Motion detection control --------------------------------------------------
+
+@app.route("/api/motion/enable", methods=["POST"])
+def motion_enable():
+    try:
+        result = subprocess.run(
+            ["systemctl", "start", "ipcamera-motion.service"],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0:
+            return jsonify({"status": "started"})
+        return jsonify({"status": "error", "message": result.stderr.strip()}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/motion/disable", methods=["POST"])
+def motion_disable():
+    try:
+        result = subprocess.run(
+            ["systemctl", "stop", "ipcamera-motion.service"],
+            capture_output=True, text=True, timeout=15
+        )
+        if result.returncode == 0:
+            return jsonify({"status": "stopped"})
+        return jsonify({"status": "error", "message": result.stderr.strip()}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# ------------------------------------------------------------------------------
+
+
 @app.route("/api/delete/<filename>", methods=["DELETE"])
 def delete_recording(filename):
     if not filename.endswith(".mp4") or not filename.startswith("recording_"):
@@ -403,6 +435,16 @@ def get_status():
     except Exception:
         pass
 
+    motion_status = "unknown"
+    try:
+        result = subprocess.run(
+            ["systemctl", "is-active", "ipcamera-motion.service"],
+            capture_output=True, text=True,
+        )
+        motion_status = result.stdout.strip()
+    except Exception:
+        pass
+
     network_interfaces = []
     try:
         for iface, addrs in psutil.net_if_addrs().items():
@@ -417,6 +459,7 @@ def get_status():
     return jsonify({
         "disk_usage":         disk_usage,
         "recording_status":   recording_status,
+        "motion_status":      motion_status,
         "network_interfaces": network_interfaces,
         "timestamp":          datetime.now().isoformat(),
     })
