@@ -15,6 +15,7 @@ RTSP_URL = "rtsp://192.168.1.18:554/1/h264major"
 RECORDINGS_DIR = "/opt/ipcamera/recordings"
 LOGS_DIR = "/opt/ipcamera/logs"
 HLS_DIR = "/tmp/hls"
+CHRIS_PC_TAILSCALE_IP = "100.110.56.90"
 
 hls_process = None
 hls_lock = threading.Lock()
@@ -272,6 +273,20 @@ def sleep_pc():
         return jsonify({"status": "error", "message": "wakeonlan not installed on server"}), 500
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/pc/status")
+def pc_status():
+    try:
+        result = subprocess.run(
+            ["ping", "-c", "1", "-W", "2", CHRIS_PC_TAILSCALE_IP],
+            capture_output=True, text=True, timeout=5
+        )
+        return jsonify({"online": result.returncode == 0})
+    except FileNotFoundError:
+        return jsonify({"online": False, "message": "ping not installed on server"}), 500
+    except Exception as e:
+        return jsonify({"online": False, "message": str(e)}), 500
 
 
 @app.route("/api/snapshot")

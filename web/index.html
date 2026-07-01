@@ -234,7 +234,10 @@
     </div>
 
     <div class="card">
-        <div class="card-header"><span class="card-title">Christopher's Desktop</span></div>
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+            <span class="card-title">Christopher's Desktop</span>
+            <div class="pill"><div class="dot off" id="pcDot"></div><span id="pcStatusText">Checking…</span></div>
+        </div>
         <div class="card-body">
             <button id="wolBtn" class="action-pill-btn" onclick="wakePC()">Wake</button>
             <button id="sleepBtn" class="action-pill-btn" onclick="sleepPC()">Sleep</button>
@@ -403,6 +406,16 @@
         btn.disabled=false; setTimeout(()=>{lbl.textContent='';},4000);
     }
 
+    /* PC status (Tailscale ping) */
+    async function updatePcStatus() {
+        const dot=document.getElementById('pcDot'),txt=document.getElementById('pcStatusText');
+        try {
+            const d=await (await fetch('/api/pc/status')).json();
+            dot.className=d.online?'dot':'dot off';
+            txt.textContent=d.online?'Online':'Offline';
+        } catch(e){ dot.className='dot off'; txt.textContent='Unknown'; }
+    }
+
     /* Wake */
     async function wakePC() {
         const btn=document.getElementById('wolBtn'),lbl=document.getElementById('wolStatusLabel');
@@ -492,8 +505,10 @@
 
     window.addEventListener('load', () => {
         updateStatus();
+        updatePcStatus();
         loadRecordings();
         setInterval(updateStatus,  30000);
+        setInterval(updatePcStatus, 30000);
         // Refresh recordings list every 10s when the tab is visible
         setInterval(() => { if(!document.hidden) loadRecordings(); }, 10000);
     });
