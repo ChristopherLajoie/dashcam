@@ -1,0 +1,11 @@
+// Lets the ipcamera-web service (running as foxtrot, no active login session)
+// start/stop these two units via systemctl without an interactive polkit prompt.
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.systemd1.manage-units" &&
+        subject.user == "foxtrot") {
+        var unit = action.lookup("unit");
+        if (unit == "ipcamera-recorder.service" || unit == "ipcamera-motion.service") {
+            return polkit.Result.YES;
+        }
+    }
+});
